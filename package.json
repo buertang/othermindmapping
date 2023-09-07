@@ -22,7 +22,7 @@
     "core-js": "^3.6.5",
     "mitt": "^3.0.0",
     "nprogress": "^0.2.0",
-    "pinia": "^2.0.32",
+    "pinia": "2.0.32",
     "remixicon": "^2.5.0",
     "vue": "3.2.20",
     "vue-codemirror": "^6.1.1",
