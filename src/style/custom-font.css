@@ -1,0 +1,19 @@
+@font-face {
+  font-family: 'consola';
+  src: url('../assets/font-family/consola.ttf')
+}
+
+@font-face {
+  font-family: 'fontello';
+  src: url('../assets/font-family/fontello.woff')
+}
+
+@font-face {
+  font-family: 'lato';
+  src: url('../assets/font-family/lato.woff2')
+}
+
+@font-face {
+  font-family: 'fangzhengheiti';
+  src: url('../assets/font-family/FangZhengHei.ttf')
+}

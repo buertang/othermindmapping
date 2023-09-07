@@ -1,0 +1,2006 @@
+<template>
+  <div class="xmind-map-container">
+    <div
+      id="zx-xmind-map"
+      :class="{ 'xmind-readonly': readOnly, 'xmind-relationing': drawRelationIng }"
+      :style="{ 'background-color': backgroundColor }"
+      @click="hiddenPopover();removeNodeHighLight();removeSummaryNodeHighLight();removeRelationNodeHighLight()"></div>
+
+    <transition name="editor-fade-in">
+      <Editor
+        @mousedown.stop
+        @set-editable-value="setEditableValue"
+        :value="['summary', 'relation'].includes(editorTypeName)
+          ? editorNodeValue
+          : currnentNode.data[editorTypeName]"
+        :editorTypeName="editorTypeName"
+        :position="editorPosition"
+        v-if="editorVisible" />
+    </transition>
+
+    <ContextMenu
+      @mousedown.stop
+      v-if="contextVisible"
+      :node="currnentNode"
+      :copyNode="copyNodeInstance"
+      :batchNodes="selectNodes"
+      :type="contextMenuType"
+      @context-click="contextMenuClick"
+      :style="{
+        left: position.x + 'px',
+        top: position.y + 'px',
+        transform: `translate(${position.tx}px, ${position.ty}px)`
+      }" />
+
+    <transition name="scale-fade-in">
+      <div
+        v-show="scaleNumberVisible"
+        class="scale-number-model">{{ scaleNumber }}%</div>
+    </transition>
+
+    <TopActionBar
+      @mousedown.stop
+      v-show="!immersion"
+      @h-click="handlerActionClick"
+      :historyStep="historyStep"
+      :currentStep="currentStep"
+      :batchNodes="selectNodes"
+      :structure="currentStructure"
+      :isRoot="!currnentNode?.parent"
+      :nodeId="currnentNode?.data._id" />
+
+    <transition name="tiezhi-fade-in">
+      <IconSelectModal
+        @mousedown.stop
+        :typeName="iconTypeName"
+        @select-tiezhi-icon="selectTiezhiIcon"
+        @close="tiezhiIconVisible = false"
+        v-if="tiezhiIconVisible" />
+    </transition>
+
+    <transition name="structure-fade-in">
+      <DataStructure
+        ref="dataStructureRef"
+        v-if="structureVisible"
+        @close="structureVisible = false" />
+    </transition>
+
+    <div
+      @mousedown.stop
+      :style="{ left: customDeleteModalPos.x + 'px', top: customDeleteModalPos.y + 'px' }"
+      class="delete-mark-icon"
+      v-if="customDeleteModalPos">
+      <i @click.stop="deleteNodeElement" class="ri-delete-bin-6-line"></i>
+    </div>
+
+    <transition name="tiezhi-fade-in">
+      <UploadImage
+        @mousedown.stop
+        :uploadType="uploadType"
+        v-if="uploadImageVisible"
+        @set-image="setNodeImage"
+        @set-json="setCanvasJson"
+        @close="uploadImageVisible = false" />
+    </transition>
+
+    <TiptapEditor
+      @mousedown.stop
+      v-if="Boolean(tipTapPosition)"
+      :top="tipTapPosition.top"
+      :left="tipTapPosition.left"
+      :value="valueComment"
+      @get-comment-html="getCommentHtml" />
+
+    <ThumbXMind
+      :class="{ 'thumb-hidden': !openThumb }"
+      :scaleNumber="scaleNumber / 100"
+      :boundingClient="boundingClient"
+      @move-map="moveXmindMap"
+      ref="thumbXminRef" />
+
+    <CommandBar
+      :scaleNumber="scaleNumber"
+      v-show="!immersion"
+      @set-scale="setXMindMapScale"
+      @reset-xmind-style="resetSubjectStyle(true)"
+      @set-map-center="setXMindMapCenter" />
+
+    <div class="x-mind-statistic">
+      <p>字数 {{ textLen }}</p>
+      <p>主题 {{ nodeCount }}</p>
+    </div>
+  </div>
+  <SidebarTriggerContainer
+    v-show="!immersion"
+    :theme="currentTheme"
+    :structure="currentStructure"
+    :currentSubject="currnentNode"
+    :edgeStyle="currentEdgeStyle"
+    @update-theme="updateXMindTheme"
+    @update-structure="updateXMindStructure"
+    @update-edge-style="updateXMindEdgeStyle"
+    @reset-subject-style="resetSubjectStyle" />
+</template>
+
+<script>
+import theme from './theme'
+import mitter from './mitt'
+import { xmindMap } from '@/store'
+import { storeToRefs } from 'pinia'
+import { COULDRESETFILEDS } from './config'
+import { select, selectAll } from 'd3-selection'
+import { zoom as d3Zoom, zoomIdentity } from 'd3-zoom'
+import { preventWindowDefault, shortcutKeydown } from './shortcutKey'
+import { ref, defineComponent, onMounted, nextTick, computed, onBeforeUnmount, watch } from 'vue'
+import { getLinearExpression, getMinDistancePoint, getRectLineIntersectionPoint, collideRect } from './utils/math'
+import { randomId, dataTreeLayoutPackage, getXmindSummaryPos, getNodeRelationPathPoints, setuniqueId } from './utils/node'
+import {
+  debounce,
+  insertXmindNode,
+  batchInsertXmindNode,
+  deleteXmindNode,
+  batchDeleteXmindNode,
+  moveXmindNode,
+  copyOrCutXmindNode,
+  expandAllNodes,
+  toogleExpandXmindNode,
+  recursiveTreeValue,
+  batchRecursiveTreeValue,
+  storageRootRelaTime,
+  createNodeIntance,
+  backupRootDeleteChild,
+  splitLeftRightRoot,
+  exportSVG,
+  exportPNG,
+  exportJSON,
+  statisticTreeCount,
+  getTargetDataById,
+  resetRootNodeStyleFiled
+} from './utils'
+import {
+  createCanvasContainer,
+  renderNewNodes,
+  renderUpdateNodes,
+  renderDeleteNodes,
+  renderXmindOtherElement,
+  renderNewEdges,
+  renderUpdateEdges,
+  renderDeleteEdges,
+  drawAllSelectDomain,
+  renderVirtualRelationPath,
+  updateRenderVirtualRelationPath,
+  createCustomXMindDEFS,
+  drawRealRealtionPath,
+  updateRedrawNodeStyle
+} from './graph/draw'
+import { message } from 'ant-design-vue'
+import Editor from './components/Editor.vue'
+import CommandBar from './components/CommandBar.vue'
+import ThumbXMind from './components/ThumbXMind.vue'
+import UploadImage from './components/UploadImage.vue'
+import ContextMenu from './components/ContextMenu.vue'
+import TiptapEditor from './components/TiptapEditor.vue'
+import TopActionBar from './components/TopActionBar.vue'
+import DataStructure from './components/DataStructure.vue'
+import IconSelectModal from './components/IconSelectModal.vue'
+import SidebarTriggerContainer from './components/SidebarTriggerContainer.vue'
+let root = window.localStorage.getItem('root')
+  ? JSON.parse(window.localStorage.getItem('root'))
+  : createNodeIntance('主题根节点')
+let svg = null
+let mindContainer = null
+let canvasWidth = 0
+let canvasHeight = 0
+let nodes = []
+let edges = []
+let scaleNumberTimer = null
+let eventTransform = null
+let domainStart = null
+let hasMoveEvent = false
+let dragEnterNodeId = null
+const debounceUpdateFileds = ['textColor', 'strokeColor', 'backgroundColor', 'lineColor']
+export default defineComponent({
+  components: {
+    Editor,
+    CommandBar,
+    ContextMenu,
+    TopActionBar,
+    IconSelectModal,
+    ThumbXMind,
+    DataStructure,
+    UploadImage,
+    TiptapEditor,
+    SidebarTriggerContainer
+  },
+  setup () {
+    const store = xmindMap()
+    const { openThumb, readOnly, immersion } = storeToRefs(store)
+    const thumbXminRef = ref(null)
+    const dataStructureRef = ref(null)
+    const contextMenuType = ref(null)
+    const currentTheme = ref(localStorage.getItem('theme') || 'primary')
+    const currentStructure = ref(localStorage.getItem('structure') || 'ljjgt')
+    const currentEdgeStyle = ref(localStorage.getItem('edgeStyleValue') || '2')
+    const copyNodeInstance = ref(null)
+    const position = ref({ x: 0, y: 0, tx: 0, ty: 0 })
+    const editorTypeName = ref('text')
+    const currentMarkIcon = ref(null)
+    const customDeleteModalPos = ref(null)
+    const iconTypeName = ref()
+    const scaleNumber = ref(100)
+    const currnentNode = ref(null)
+    const selectNodes = ref([])
+    const dragIngSubject = ref(null)
+    const editorVisible = ref(false)
+    const contextVisible = ref(false)
+    const scaleNumberVisible = ref(false)
+    const tiezhiIconVisible = ref(false)
+    const structureVisible = ref(false)
+    const uploadImageVisible = ref(false)
+    const historyStep = ref([JSON.parse(JSON.stringify(root))])
+    const currentStep = ref(0)
+    const textLen = ref(0)
+    const nodeCount = ref(0)
+    const uploadType = ref(null)
+    const tipTapPosition = ref(null)
+    const valueComment = ref(null)
+    const boundingClient = ref(null)
+    const selectSummaryId = ref(null)
+    const editorNodeValue = ref(null)
+    const currentInsertSummaryId = ref(null)
+    const drawRelationIng = ref(false)
+    const controllerClassName = ref(null)
+    const relationNodeSubject = ref(null)
+    const isPastState = ref(true)
+    const editorPosition = ref(null)
+    const backgroundColor = computed(() => {
+      return theme[currentTheme.value].backgroundColor
+    })
+
+    onMounted(() => {
+      preventWindowDefault()
+      shortcutKeydown()
+      mitter.on('node-handler-click', function ({ event, _this }) {
+        if (drawRelationIng.value) {
+          return drawRelationPathEnd(event)
+        }
+        nodeHandlerClick(event, _this)
+      })
+      mitter.on('node-context-click', function ({ event, _this }) {
+        nodeContextClick(event, _this)
+      })
+      mitter.on('node-handler-dblclick', function ({ event, _this }) {
+        nodeHandlerDblclick(event, _this)
+      })
+      mitter.on('node-handler-mouseenter', function ({ event, _this }) {
+        nodeHandlerMouseEnter(event, _this)
+      })
+      mitter.on('node-handler-mouseleave', function ({ event, _this }) {
+        nodeHandlerMouseLeave(event, _this)
+      })
+      mitter.on('node-handler-draging', function ({ event, _this }) {
+        nodeHandlerDragIng(event, _this)
+      })
+      mitter.on('node-handler-dragend', function ({ event, _this }) {
+        nodeHandlerDragEnd(event, _this)
+      })
+      mitter.on('mark-handler-click', function ({ event, _this }) {
+        markHandlerClick(event, _this)
+      })
+      mitter.on('expand-node-click', function ({ event, _this }) {
+        expandNodeClick(event, _this)
+      })
+      mitter.on('comment-handler-click', function ({ event, _this }) {
+        commentIconHandlerClick(event, _this)
+      })
+      mitter.on('summary-handler-mouseenter', function ({ event, _this }) {
+        summaryHandlerMouseEnter(null, event, _this)
+      })
+      mitter.on('summary-handler-mouseleave', function ({ event, _this }) {
+        summaryHandlerMouseLeave(event, _this)
+      })
+      mitter.on('summary-handler-click', function ({ event, _this }) {
+        summaryHandlerClick(null, event, _this)
+      })
+      mitter.on('summary-handler-dblclick', function ({ event, _this }) {
+        summaryHandlerDblclick(event, _this)
+      })
+      mitter.on('expand-handler-click', function ({ event, _this }) {
+        event.stopPropagation()
+        const currnentNode = select(_this).datum()
+        toogleExpandXmindNode(root, currnentNode.data._id, false)
+        updateXmindCanvas()
+      })
+      mitter.on('relation-node-handler-click', function ({ event, _this }) {
+        relationNodeHandlerClick(event, _this)
+      })
+      mitter.on('relation-node-contextmenu', function ({ event, _this }) {
+        relationNodeContextmenu(event, _this)
+      })
+      mitter.on('relation-node-dblclick', function ({ event, _this }) {
+        relationNodeDBlclick(event, _this)
+      })
+      mitter.on('relation-controller-mousedown', function ({ event, _this }) {
+        event.stopPropagation()
+        controllerClassName.value = select(_this)
+          .attr('class')
+        relationNodeSubject.value = select(_this.parentNode)
+          .classed('active-relation', true)
+          .datum()
+      })
+      const debounceUpdateStyle = debounce((filedName, filedValue) => {
+        recursiveTreeValue(root, currnentNode.value.data._id, filedName, filedValue)
+        updateXmindCanvas(false)
+      }, 300)
+      mitter.on('update-subject-style', function ({ filedName, filedValue }) {
+        if (!debounceUpdateFileds.includes(filedName)) {
+          recursiveTreeValue(root, currnentNode.value.data._id, filedName, filedValue)
+          updateXmindCanvas(false)
+        } else {
+          updateRedrawNodeStyle({ filedValue, filedName, id: currnentNode.value.data._id })
+          debounceUpdateStyle(filedName, filedValue)
+        }
+      })
+      shortcutMitters()
+      initMindmindContainer('zx-xmind-map')
+      window.addEventListener('resize', resizeXmindMap)
+    })
+
+    onBeforeUnmount(() => {
+      mitter.all.clear()
+      window.removeEventListener('resize', resizeXmindMap)
+    })
+
+    /**
+     * 初始化画布渲染所有元素
+     * @param { String } id 生成画布容器id
+     */
+    function initMindmindContainer (id) {
+      const ele = document.getElementById(id)
+      canvasWidth = ele.clientWidth
+      canvasHeight = ele.clientHeight
+      const zoom = structureZoom()
+      svg = select(ele)
+        .append('svg')
+        .attr('id', 'zx-xmind-map-svg')
+        .attr('width', canvasWidth)
+        .attr('height', canvasHeight)
+        .attr('xmlns', 'http://www.w3.org/2000/svg')
+        .attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+        .on('contextmenu', outterContextClick)
+        .call(zoom)
+        .on('dblclick.zoom', null)
+      select('.xmind-map-container')
+        .on('mousedown', mouseStartMoveOnScreen)
+        .on('mousemove', mouseMoveIngOnScreen)
+        .on('mouseup', mouseEndMoveOnScreen)
+      mindContainer = svg
+        .append('g')
+        .attr('class', 'map-outter-container')
+      createCustomXMindDEFS()
+      initRnderCanvas()
+      const localTransform = localStorage.getItem('transform')
+      setXMindMapCenter(localTransform ? JSON.parse(localTransform) : undefined)
+    }
+
+    /**
+     * 构造画布缩放可拖动zoom实例
+     */
+    function structureZoom () {
+      const zoom = d3Zoom()
+        .scaleExtent([0.1, 10])
+        .filter(event => event.ctrlKey && event.buttons <= 1)
+        .wheelDelta(event => -event.deltaY * (event.deltaMode ? 120 : 1) / 500)
+        .on('start', function (event) {
+          hiddenPopover()
+          removeNodeHighLight()
+          if (event.sourceEvent && event.sourceEvent.type !== 'wheel') {
+            select(this).classed('grabbing', true)
+          }
+          exitDrawRelation()
+        })
+        .on('zoom', function (event) {
+          clearTimeout(scaleNumberTimer)
+          mindContainer.attr('transform', () => {
+            eventTransform = event.transform
+            localStorage.setItem('transform', JSON.stringify(eventTransform))
+            return eventTransform
+          })
+          scaleNumber.value = Math.round(event.transform.k * 100)
+          if (event.sourceEvent && event.sourceEvent.type === 'wheel') {
+            scaleNumberVisible.value = true
+          }
+          const { top, right, bottom, left } = mindContainer.node().getBoundingClientRect()
+          boundingClient.value = {
+            top, right, bottom, left
+          }
+        })
+        .on('end', function () {
+          select(this).classed('grabbing', false)
+          scaleNumberTimer = setTimeout(() => {
+            scaleNumberVisible.value = false
+          }, 600)
+        })
+      return zoom
+    }
+
+    /**
+     * 画布局中
+     */
+    function setXMindMapCenter (transform) {
+      const zoom = structureZoom()
+      const { width, height } = select('.x-mind-root-theme').node().getBoundingClientRect()
+      nextTick(() => {
+        if (!transform) {
+          svg
+            .call(zoom.transform,
+              zoomIdentity
+                .translate((canvasWidth - width) / 2, (canvasHeight - height) / 2).scale(1))
+        } else {
+          const { x, y, k } = transform
+          svg
+            .call(zoom.transform,
+              zoomIdentity
+                .translate(x, y)
+                .scale(k))
+        }
+      })
+    }
+
+    function moveXmindMap ({ x, y }) {
+      const scalceRadio = 0.1 / (scaleNumber.value / 100)
+      const zoom = structureZoom()
+      svg
+        .call(zoom.transform,
+          zoomIdentity
+            .translate(eventTransform.x - x / scalceRadio, eventTransform.y - y / scalceRadio)
+            .scale(eventTransform.k))
+    }
+
+    function resizeXmindMap () {
+      const ele = document.getElementById('zx-xmind-map')
+      canvasWidth = ele.clientWidth
+      canvasHeight = ele.clientHeight
+      svg
+        .attr('width', canvasWidth)
+        .attr('height', canvasHeight)
+    }
+
+    function setXMindMapScale (command) {
+      let k = Math.ceil(eventTransform.k * 10 + (command === 'reduce' ? -1 : 1)) / 10
+      if (k <= 0.1) {
+        k = 0.1
+      } else if (k >= 10) {
+        k = 10
+      }
+      const zoom = structureZoom()
+      svg
+        .call(zoom.transform,
+          zoomIdentity
+            .translate(eventTransform.x, eventTransform.y)
+            .scale(k))
+    }
+
+    function updateSelectNodeHighLight (event) {
+      const selections = select('.mind-map-nodebox')
+        .selectAll('.x-mind-nodetheme')
+      removeNodeHighLight()
+      selections.nodes().forEach(selection => {
+        const collide = collideRect(
+          { x: Math.min(domainStart.x, event.x), y: Math.min(domainStart.y, event.y), width: Math.abs(event.x - domainStart.x), height: Math.abs(event.y - domainStart.y) },
+          selection.getBoundingClientRect()
+        )
+        if (collide) {
+          selectNodes.value.push(select(selection).datum())
+          const id = select(selection).datum().data._id
+          nodeHighLight(id)
+        }
+      })
+    }
+
+    /**
+     * 画布主题节点和连线边节点数据计算
+     */
+    function getNodeEdgesData () {
+      try {
+        const backupRoot = backupRootDeleteChild(root)
+        const { leftRoot, rightRoot } = splitLeftRightRoot(backupRoot, currentStructure.value)
+        const packageLayoutdataLeft = dataTreeLayoutPackage(leftRoot, currentTheme.value, 'left')
+        const packageLayoutdataRight = dataTreeLayoutPackage(rightRoot,
+          currentTheme.value,
+          currentStructure.value === 'zzjgt'
+            ? 'bottom'
+            : 'right')
+        const leftNodes = packageLayoutdataLeft.nodes.slice(1)
+        const leftLinks = packageLayoutdataLeft.links
+        const rightNodes = packageLayoutdataRight.nodes
+        const rightLinks = packageLayoutdataRight.links
+        nodes = [...leftNodes, ...rightNodes]
+        edges = [...leftLinks, ...rightLinks]
+        if (currentStructure.value === 'kht') {
+          for (let i = 0; i < edges.length; i++) {
+            const edge = edges[i]
+            const parent = edge.target.parent
+            const idx = parent.children.findIndex(o => o.data._id === edge.target.data._id)
+            if (idx !== 0 && idx !== parent.children.length - 1) {
+              edges.splice(i, 1)
+              i--
+            }
+          }
+        }
+        return {
+          nodes,
+          edges
+        }
+      } catch (error) {
+        uploadImageVisible.value = false
+        message.error('json文件格式不符合，请参照格式模板上传')
+      }
+    }
+
+    function initRnderCanvas () {
+      createCanvasContainer(mindContainer)
+      const { nodes, edges } = getNodeEdgesData()
+      const relationNodes = nodes.filter(node => node.data.relations?.length)
+      renderNewNodes(nodes, theme[currentTheme.value], currentStructure.value)
+      renderNewEdges(edges)
+      renderXmindOtherElement(undefined, relationNodes)
+      thumbXminRef.value.setThumbAttrs(nodes, edges, theme[currentTheme.value], currentStructure.value)
+      thumbXminRef.value.initThumbMindContainer()
+      const statistic = statisticTreeCount(root)
+      textLen.value = statistic.len
+      nodeCount.value = statistic.count
+    }
+
+    /**
+     * 新增、编辑、删除节点后整体画布更新
+     * @param { Boolean } clearable 更新画布的时候是否需要清除当前选中的节点
+     * @param { Boolean } appendHistory 更新画布的时候是否需要把当前数据存入历史数据中
+     */
+    function updateXmindCanvas (clearable = true, appendHistory = true) {
+      const { nodes, edges } = getNodeEdgesData()
+      const relationNodes = nodes.filter(node => node.data.relations?.length)
+      renderNewNodes(nodes, theme[currentTheme.value], currentStructure.value)
+      renderUpdateNodes(nodes)
+      renderDeleteNodes(nodes)
+      renderNewEdges(edges)
+      renderUpdateEdges(edges)
+      renderDeleteEdges(edges)
+      renderXmindOtherElement(currentInsertSummaryId.value, relationNodes)
+      storageRootRelaTime(root)
+      thumbXminRef.value.setThumbAttrs(nodes, edges, theme[currentTheme.value], currentStructure.value)
+      thumbXminRef.value.updateThumbXmindCanvas()
+      const statistic = statisticTreeCount(root)
+      textLen.value = statistic.len
+      nodeCount.value = statistic.count
+      if (clearable) {
+        hiddenPopover()
+        removeNodeHighLight()
+      } else {
+        contextVisible.value = false
+        selectAll('.select-node')
+          .classed('select-node', false)
+          .select('.select-rect-border')
+          .remove()
+        nodeHighLight(currnentNode.value.data._id)
+      }
+      if (appendHistory) {
+        appendXmindHistory()
+      }
+      removeSummaryNodeHighLight()
+    }
+
+    function nodeHandlerDblclick (event, _this) {
+      event.stopPropagation()
+      removeNodeHighLight()
+      currnentNode.value = select(_this).datum()
+      nodeHighLight(currnentNode.value.data._id)
+      editorTypeName.value = 'text'
+      editorVisible.value = true
+      selectNodes.value.push(currnentNode.value)
+      if (currnentNode.value.data.text) {
+        editorPosition.value = select(_this).select('.x-mind-node-text').node().getBoundingClientRect()
+      } else {
+        editorPosition.value = select(_this).node().getBoundingClientRect()
+      }
+    }
+
+    function nodeHandlerDragIng (event, _this) {
+      event.sourceEvent.stopPropagation()
+      const subject = event.subject
+      if (!subject.parent || editorVisible.value) return
+      if (!dragIngSubject.value) {
+        const childNodedata = select(_this)
+          .style('pointer-events', 'none')
+          .style('opacity', 0.7)
+          .raise().datum().descendants()
+        childNodedata.forEach(node => {
+          if (node.data._id !== subject.data._id) {
+            select(`#${node.data._id}`).remove()
+          }
+          select(`#summary-path-${node.data._id}`).remove()
+        })
+        select('.mind-map-edgebox')
+          .selectAll('g')
+          .filter(path => childNodedata.find(o => o.data._id === path.target.data._id))
+          .remove()
+        const relations = (subject.data.relations || []).map(o => o.relationId)
+        relations.forEach(id => {
+          select(`#relation-${id}`).remove()
+        })
+        dragIngSubject.value = subject
+        select('#zx-xmind-map-svg').classed('moving', true)
+      }
+      const { tx = 0, ty = 0 } = select(_this).datum()
+      select(_this).datum().tx = tx + event.dx
+      select(_this).datum().ty = ty + event.dy
+      select(_this).attr('transform', `translate(${tx + event.dx}, ${ty + event.dy})`)
+    }
+
+    function nodeHandlerDragEnd (_event, _this) {
+      if (!dragIngSubject.value) return
+      if ((dragIngSubject.value.parent.data._id !== dragEnterNodeId) && dragEnterNodeId) {
+        const data = copyOrCutXmindNode(root.children, root, dragIngSubject.value.data._id, true)
+        insertXmindNode([root], dragEnterNodeId, 'child', data)
+      }
+      select('.nodedragenter-border').style('opacity', 0)
+      select(_this).remove()
+      dragEnterNodeId = null
+      dragIngSubject.value = null
+      updateXmindCanvas()
+      select('#zx-xmind-map-svg').classed('moving', false)
+    }
+
+    function nodeHandlerClick (event, _this) {
+      event.stopPropagation()
+      removeSummaryNodeHighLight()
+      removeRelationNodeHighLight()
+      if (!event.altKey) {
+        removeNodeHighLight()
+        currnentNode.value = select(_this).datum()
+        const id = currnentNode.value.data._id
+        nodeHighLight(id)
+        selectNodes.value.push(currnentNode.value)
+      } else {
+        const data = select(_this).datum()
+        const id = data.data._id
+        const hasSelect = select(`#${id}`).classed('select-node')
+        if (hasSelect) {
+          select(`#${id}`)
+            .classed('select-node', false)
+            .select('.select-rect-border')
+            .remove()
+          const idx = selectNodes.value.findIndex(n => n.data._id === data.data._id)
+          selectNodes.value.splice(idx, 1)
+        } else {
+          nodeHighLight(id)
+          selectNodes.value.push(data)
+        }
+        if (selectNodes.value.length > 1) {
+          currnentNode.value = null
+        } else {
+          currnentNode.value = selectNodes.value[0] || null
+        }
+      }
+    }
+
+    function markHandlerClick (event, _this) {
+      event.stopPropagation()
+      const data = select(_this).datum()
+      const pos = select(_this).node().getBoundingClientRect()
+      const ratio = scaleNumber.value / 100
+      customDeleteModalPos.value = {
+        x: pos.x - (80 - data.style.markSize * ratio) / 2 + 2 * ratio,
+        y: pos.y + (data.style.markSize + 4) * ratio + 16
+      }
+      removeMarkHighlight()
+      markHighLight(_this)
+      currentMarkIcon.value = data
+    }
+
+    function outterContextClick (event) {
+      const [w, h] = [190, 210]
+      const [x, y] = [event.pageX, event.pageY]
+      let [tx, ty] = [0, 0]
+      x + w > canvasWidth && (tx = -w)
+      y + h > canvasHeight && (ty = -h)
+      position.value = { x, y, tx, ty }
+      contextMenuType.value = 'global'
+      contextVisible.value = true
+    }
+
+    /**
+     * 获取可编辑div内容
+     * @param { String } value
+     * @param { String } editorTypeName
+     */
+    function setEditableValue (value, editorTypeName) {
+      if (editorTypeName === 'relation') {
+        const relationId = relationNodeSubject.value.relationId
+        const sourceId = relationNodeSubject.value.source.id
+        select(`#relation-${relationId}`)
+          .select('.controller-model')
+          .datum({
+            ...relationNodeSubject.value,
+            relationText: value
+          })
+          .select('text')
+          .text(value)
+        const sourceData = getTargetDataById(root, sourceId)
+        const relations = sourceData.relations
+        const targetRelation = relations.find(o => o.relationId === relationId)
+        targetRelation.relationText = value
+        storageRootRelaTime(root)
+        hiddenPopover()
+        removeRelationNodeHighLight()
+        relationNodeSubject.value = null
+        appendXmindHistory()
+        return
+      }
+      recursiveTreeValue(
+        root,
+        editorTypeName === 'summary' ? selectSummaryId.value : currnentNode.value.data._id,
+        editorTypeName,
+        value
+      )
+      updateXmindCanvas()
+    }
+
+    function contextMenuClick (operate, type) {
+      const ids = selectNodes.value.map(n => n.data._id)
+      switch (operate) {
+        case 'insert-brother':
+          if (type === 'single') {
+            insertXmindNode(root.children || [], currnentNode.value.data._id, 'brother')
+          } else if (type === 'global') {
+            batchInsertXmindNode(root.children || [], ids, 'brother')
+          }
+          updateXmindCanvas()
+          break
+        case 'insert-child':
+          if (type === 'single') {
+            insertXmindNode([root], currnentNode.value.data._id, 'child')
+          } else if (type === 'global') {
+            batchInsertXmindNode(root.children || [], ids, 'child')
+          }
+          updateXmindCanvas()
+          break
+        case 'insert-tiezhi':
+          contextVisible.value = false
+          iconTypeName.value = 'tiezhi'
+          tiezhiIconVisible.value = true
+          break
+        case 'insert-tupian':
+          contextVisible.value = false
+          uploadType.value = 'image'
+          uploadImageVisible.value = true
+          break
+        case 'insert-biaoji':
+          contextVisible.value = false
+          iconTypeName.value = 'mark'
+          tiezhiIconVisible.value = true
+          break
+        case 'insert-tag':
+          contextVisible.value = false
+          editorTypeName.value = 'tag'
+          editorVisible.value = true
+          break
+        case 'insert-link':
+          contextVisible.value = false
+          editorTypeName.value = 'link'
+          editorVisible.value = true
+          break
+        case 'insert-beizhu': {
+          contextVisible.value = false
+          const { _id: id, comment } = currnentNode.value.data
+          insertNodeComment(id, comment)
+          break
+        }
+        case 'up':
+          moveXmindNode(root.children || [], currnentNode.value.data._id, 'up')
+          updateXmindCanvas(false)
+          break
+        case 'down':
+          moveXmindNode(root.children || [], currnentNode.value.data._id, 'down')
+          updateXmindCanvas(false)
+          break
+        case 'no-expand':
+          toogleExpandXmindNode(root, currnentNode.value.data._id, false)
+          updateXmindCanvas()
+          break
+        case 'copy':
+          isPastState.value = true
+          copyNodeInstance.value = copyOrCutXmindNode(root.children, root, currnentNode.value.data._id)
+          hiddenPopover()
+          break
+        case 'cut':
+          isPastState.value = false
+          copyNodeInstance.value = copyOrCutXmindNode(root.children, root, currnentNode.value.data._id, true)
+          updateXmindCanvas()
+          break
+        case 'delete-tiezhi':
+          if (type === 'single') {
+            recursiveTreeValue(root, currnentNode.value.data._id, 'tiezhi', null)
+          } else if (type === 'global') {
+            batchRecursiveTreeValue(root, ids, 'tiezhi', null)
+          }
+          updateXmindCanvas()
+          break
+        case 'delete-pic':
+          if (type === 'single') {
+            recursiveTreeValue(root, currnentNode.value.data._id, 'imageInfo', null)
+          } else if (type === 'global') {
+            batchRecursiveTreeValue(root, ids, 'imageInfo', null)
+          }
+          updateXmindCanvas()
+          break
+        case 'delete-summary':
+          if (type === 'single') {
+            recursiveTreeValue(root, currnentNode.value.data._id, 'summary', null)
+          } else if (type === 'global') {
+            batchRecursiveTreeValue(root, ids, 'summary', null)
+          }
+          updateXmindCanvas()
+          break
+        case 'delete-link':
+          if (type === 'single') {
+            recursiveTreeValue(root, currnentNode.value.data._id, 'link', null)
+          } else if (type === 'global') {
+            batchRecursiveTreeValue(root, ids, 'link', null)
+          }
+          updateXmindCanvas()
+          break
+        case 'past': {
+          const paseNode = JSON.parse(JSON.stringify(copyNodeInstance.value))
+          if (isPastState.value) {
+            setuniqueId(paseNode, true)
+          }
+          insertXmindNode([root], currnentNode.value.data._id, 'child', paseNode)
+          updateXmindCanvas()
+          if (!isPastState.value) {
+            copyNodeInstance.value = null
+          }
+          break
+        }
+        case 'noexpand-all':
+          expandAllNodes(root, false)
+          updateXmindCanvas()
+          break
+        case 'expand-all':
+          expandAllNodes(root, true)
+          updateXmindCanvas()
+          break
+        case 'clear-children':
+          recursiveTreeValue(root, currnentNode.value.data._id, 'children', null)
+          updateXmindCanvas()
+          break
+        case 'delete':
+          if (type === 'single') {
+            deleteXmindNode(root.children || [], currnentNode.value.data._id)
+          } else if (type === 'global') {
+            batchDeleteXmindNode(root.children || [], ids)
+          }
+          updateXmindCanvas()
+          break
+        case 'canvas-center':
+          setXMindMapCenter()
+          break
+      }
+    }
+
+    function handlerActionClick (action) {
+      switch (action) {
+        case 'prev-step':
+          currentStep.value += 1
+          root = JSON.parse(JSON.stringify(historyStep.value[currentStep.value]))
+          updateXmindCanvas(undefined, false)
+          break
+        case 'next-step':
+          currentStep.value -= 1
+          root = JSON.parse(JSON.stringify(historyStep.value[currentStep.value]))
+          updateXmindCanvas(undefined, false)
+          break
+        case 'insert-brother':
+          insertXmindNode(root.children || [], currnentNode.value.data._id, 'brother')
+          updateXmindCanvas()
+          break
+        case 'insert-child':
+          insertXmindNode([root], currnentNode.value.data._id, 'child')
+          updateXmindCanvas()
+          break
+        case 'insert-tiezhi':
+          iconTypeName.value = 'tiezhi'
+          tiezhiIconVisible.value = true
+          break
+        case 'insert-tupian':
+          uploadType.value = 'image'
+          uploadImageVisible.value = true
+          break
+        case 'insert-tag':
+          editorTypeName.value = 'tag'
+          editorVisible.value = true
+          break
+        case 'dagang':
+          structureVisible.value = true
+          nextTick(() => {
+            dataStructureRef.value.setDataList([root])
+          })
+          break
+        case 'insert-biaoji':
+          iconTypeName.value = 'mark'
+          tiezhiIconVisible.value = true
+          break
+        case 'insert-link':
+          editorTypeName.value = 'link'
+          editorVisible.value = true
+          break
+        case 'insert-beizhu': {
+          const { _id: id, comment } = currnentNode.value.data
+          insertNodeComment(id, comment)
+          break
+        }
+        case 'insert-relation': {
+          drawRelationIng.value = true
+          const id = currnentNode.value.data._id
+          const clientRect = select(`#${id}`).datum()
+          const { x, y, width, height } = clientRect
+          renderVirtualRelationPath({ x: x - 4, y: y - 4, width: width + 8, height: height + 8, id })
+          break
+        }
+        case 'insert-summary':
+          if (!currnentNode.value.data.summary) {
+            currentInsertSummaryId.value = currnentNode.value.data._id
+            recursiveTreeValue(root, currnentNode.value.data._id, 'summary', '概要')
+            updateXmindCanvas()
+          } else {
+            summaryHandlerMouseEnter(currnentNode.value.data._id)
+            summaryHandlerClick(currnentNode.value.data._id)
+          }
+          break
+        case 'export-svg':
+          exportSVG(getSvgData())
+          break
+        case 'export-png':
+          exportPNG(getSvgData())
+          break
+        case 'export-json':
+          exportJSON('xmind', JSON.stringify(root))
+          break
+        case 'import-json':
+          uploadType.value = 'json'
+          uploadImageVisible.value = true
+          break
+        default:
+          break
+      }
+    }
+
+    function nodeContextClick (event, _this) {
+      event.stopPropagation()
+      event.preventDefault()
+      hiddenPopover()
+      removeNodeHighLight()
+      currnentNode.value = select(_this).datum()
+      const id = currnentNode.value.data._id
+      nodeHighLight(id)
+      const [w, h] = [190, 320]
+      const [x, y] = [event.pageX, event.pageY]
+      let [tx, ty] = [0, 0]
+      x + w > canvasWidth && (tx = -w)
+      y + h > canvasHeight && (ty = -h)
+      position.value = { x, y, tx, ty }
+      contextMenuType.value = 'single'
+      contextVisible.value = true
+      selectNodes.value.push(currnentNode.value)
+    }
+
+    function expandNodeClick (_event, _this) {
+      const currnentNode = select(_this).datum()
+      toogleExpandXmindNode(root, currnentNode.data._id, true)
+      updateXmindCanvas()
+    }
+
+    function commentIconHandlerClick (_event, _this) {
+      currnentNode.value = select(_this).datum()
+      const { _id: id, comment } = currnentNode.value.data
+      insertNodeComment(id, comment)
+    }
+
+    function nodeHandlerMouseEnter (_event, _this) {
+      select(_this).select('.expand-circle')
+        .transition().duration(300)
+        .attr('r', 6)
+        .attr('opacity', 1)
+      select(_this).select('.expand-path')
+        .transition().duration(300)
+        .attr('opacity', 1)
+      if (dragIngSubject.value) {
+        const data = select(_this).datum()
+        console.log(data)
+        dragEnterNodeId = data.data._id
+        const strokeWidth = data.style.strokeWidth / 2
+        const isExist = !select('.nodedragenter-border').empty()
+        const ele = isExist
+          ? mindContainer.select('.nodedragenter-border')
+          : mindContainer.append('rect').attr('class', 'nodedragenter-border')
+        ele.attr('rx', 4)
+          .attr('ry', 4)
+          .attr('stroke', '#2080f7')
+          .attr('stroke-width', 2)
+          .attr('x', data.x - 6 - strokeWidth)
+          .attr('y', data.y - 6 - strokeWidth)
+          .attr('width', data.width + (6 + strokeWidth) * 2)
+          .attr('height', data.height + (6 + strokeWidth) * 2)
+          .attr('stroke-dasharray', '6, 6')
+          .attr('fill', 'none')
+          .style('opacity', 1)
+      }
+    }
+
+    function nodeHandlerMouseLeave (_event, _this) {
+      select(_this).select('.expand-circle')
+        .transition().duration(300)
+        .attr('r', 4)
+        .attr('opacity', 0)
+      select(_this).select('.expand-path')
+        .transition().duration(300)
+        .attr('opacity', 0)
+      if (dragIngSubject.value) {
+        dragEnterNodeId = null
+        select('.nodedragenter-border').style('opacity', 0)
+      }
+    }
+
+    function summaryHandlerMouseEnter (parentId, _event, _this) {
+      const id = parentId || select(_this).datum().parentId
+      if (select(`#summary-path-${id}`).select('.select-target-summary').empty()) {
+        select(`#summary-path-${id}`)
+          .select('.high-border')
+          .attr('stroke', 'rgb(46,189,255)')
+          .attr('stroke-dasharray', function () {
+            return `0 ${select(this).node().getTotalLength()}`
+          })
+          .transition()
+          .duration(300)
+          .attr('stroke-dasharray', function () {
+            return `${select(this).node().getTotalLength()} 0`
+          })
+        const parentNode = select(`#${id}`).datum()
+        const {
+          minX,
+          maxX,
+          minY,
+          maxY
+        } = getXmindSummaryPos(parentNode)
+        const dir = parentNode.direction === 'right'
+        const [width, height] = [maxX - minX + 2, maxY - minY + 16]
+        select(`#summary-path-${id}`)
+          .select('g')
+          .append('rect')
+          .attr('class', 'select-target-summary')
+          .attr('x', minX + (dir ? -8 : 4))
+          .attr('y', minY - 8)
+          .attr('width', width)
+          .attr('height', height)
+          .attr('stroke-width', 2)
+          .attr('stroke', 'rgb(46,189,255)')
+          .attr('rx', 4)
+          .attr('ry', 4)
+          .attr('fill', 'none')
+          .attr('stroke-dasharray', function () {
+            return `0 ${select(this).node().getTotalLength()}`
+          })
+          .transition()
+          .duration(300)
+          .attr('stroke-dasharray', function () {
+            return `${select(this).node().getTotalLength()} 0`
+          })
+      }
+    }
+
+    function summaryHandlerMouseLeave (_event, _this) {
+      if (!select(_this).classed('active-summary-node')) {
+        select(_this)
+          .classed('active-summary-node', false)
+          .select('.high-border')
+          .attr('stroke', 'none')
+        select(_this)
+          .select('.select-target-summary')
+          .remove()
+      }
+    }
+
+    function summaryHandlerClick (parentId, event, _this) {
+      event && event.stopPropagation()
+      if (readOnly.value) return
+      removeNodeHighLight()
+      const id = parentId || select(_this).datum().parentId
+      selectAll('.mind-map-summarybox > g > g')
+        .filter(n => n.parentId !== id)
+        .classed('active-summary-node', false)
+        .select('.select-target-summary')
+        .remove()
+      selectAll('.mind-map-summarybox > g > g')
+        .filter(n => n.parentId !== id)
+        .select('.high-border')
+        .attr('stroke', 'none')
+      select(`#summary-path-${id}`)
+        .select('g')
+        .classed('active-summary-node', true)
+      selectSummaryId.value = id
+    }
+
+    function summaryHandlerDblclick (event, _this) {
+      event.stopPropagation()
+      if (readOnly.value) return
+      const id = select(_this).datum().parentId
+      editorTypeName.value = 'summary'
+      editorNodeValue.value = select(`#${id}`).datum().data.summary
+      editorVisible.value = true
+    }
+
+    function relationNodeHandlerClick (event, _this) {
+      event.stopPropagation()
+      if (hasMoveEvent) {
+        hasMoveEvent = false
+        return hasMoveEvent
+      }
+      if (select(_this).classed('active-relation')) return
+      removeNodeHighLight()
+      select('.mind-map-relationbox')
+        .selectAll('.active-relation')
+        .classed('active-relation', false)
+        .select('.active-rela-relation-path').attr('opacity', 0)
+        .each(function () {
+          select(this.parentNode)
+            .selectAll('line, rect, circle').style('display', 'none')
+        })
+      select(_this).classed('active-relation', true)
+    }
+
+    function relationNodeContextmenu (event, _this) {
+      event.stopPropagation()
+      event.preventDefault()
+      relationNodeSubject.value = select(_this).datum()
+      const pathElement = select(_this.parentNode).select('.rela-relation-path').node()
+      const pathLength = pathElement.getTotalLength()
+      const textPos = pathElement.getPointAtLength(pathLength / 2)
+      const { x, y, k } = eventTransform
+      customDeleteModalPos.value = {
+        x: textPos.x * k + x - 40,
+        y: textPos.y * k + y + 20,
+        type: 'relation'
+      }
+    }
+
+    function relationNodeDBlclick (event, _this) {
+      event.stopPropagation()
+      editorTypeName.value = 'relation'
+      relationNodeSubject.value = select(_this).datum()
+      editorNodeValue.value = relationNodeSubject.value.relationText
+      editorVisible.value = true
+    }
+
+    function deleteNodeElement () {
+      if (customDeleteModalPos.value.type !== 'relation') {
+        deleteIconMark()
+      } else {
+        deleteNodeRelation()
+      }
+    }
+
+    /**
+     * 插入图片
+     */
+    function setNodeImage (imageInfo) {
+      if (!currnentNode.value) return
+      recursiveTreeValue(root, currnentNode.value.data._id, 'imageInfo', imageInfo)
+      uploadImageVisible.value = false
+      updateXmindCanvas()
+    }
+
+    /**
+     * 导入json文件渲染画布
+     */
+    function setCanvasJson (data) {
+      root = JSON.parse(data)
+      updateXmindCanvas()
+      nextTick(setXMindMapCenter)
+    }
+
+    /**
+     * 删除标记
+     */
+    function deleteIconMark () {
+      if (!currentMarkIcon.value) return
+      const { marks, icon } = currentMarkIcon.value
+      const idx = marks.findIndex(m => m.icon === icon)
+      marks.splice(idx, 1)
+      recursiveTreeValue(root, currentMarkIcon.value._id, 'marks', marks)
+      updateXmindCanvas()
+      currentMarkIcon.value = null
+      customDeleteModalPos.value = null
+    }
+
+    /**
+     * 删除节点之间的关系连线
+     */
+    function deleteNodeRelation () {
+      if (relationNodeSubject.value) {
+        const sourceId = relationNodeSubject.value.source.id
+        const relationId = relationNodeSubject.value.relationId
+        const sourceData = getTargetDataById(root, sourceId)
+        const relations = sourceData.relations || []
+        const idx = relations.findIndex(o => o.relationId === relationId)
+        relations.splice(idx, 1)
+        storageRootRelaTime(root)
+        customDeleteModalPos.value = null
+        select(`#relation-${relationId}`).remove()
+        appendXmindHistory()
+      }
+    }
+
+    /**
+     * 插入备注信息以及备注信息回显
+     */
+    function insertNodeComment (id, comment) {
+      const nodeClientRect = select(`#${id}`).node().getBoundingClientRect()
+      valueComment.value = comment
+      tipTapPosition.value = {
+        top: nodeClientRect.top + nodeClientRect.height + 10,
+        left: nodeClientRect.left + nodeClientRect.width / 2
+      }
+    }
+
+    /**
+     * 单个或者批量插入插画贴纸或者标记贴纸
+     */
+    function selectTiezhiIcon (iconItem) {
+      if (selectNodes.value.length > 1) {
+        if (!iconItem.type) {
+          batchRecursiveTreeValue(root, selectNodes.value.map(n => n.data._id), 'tiezhi', iconItem.icon)
+        }
+      } else {
+        if (!currnentNode.value) return
+        if (!iconItem.type) {
+          recursiveTreeValue(root, currnentNode.value.data._id, 'tiezhi', iconItem.icon)
+        } else {
+          const { data } = select(`#${currnentNode.value.data._id}`).datum()
+          const marks = data.marks || []
+          const idx = marks.findIndex(m => m.type === iconItem.type)
+          if (idx > -1) {
+            marks.splice(idx, 1, iconItem)
+          } else {
+            marks.unshift(iconItem)
+          }
+          recursiveTreeValue(root, currnentNode.value.data._id, 'marks', marks)
+        }
+      }
+      updateXmindCanvas(false)
+    }
+
+    /**
+     * 插入备注信息
+     */
+    function getCommentHtml (html) {
+      if (html !== '<p><br></p>') {
+        recursiveTreeValue(root, currnentNode.value.data._id, 'comment', html)
+      } else {
+        recursiveTreeValue(root, currnentNode.value.data._id, 'comment', null)
+      }
+      tipTapPosition.value = null
+      updateXmindCanvas()
+    }
+
+    function updateXMindTheme (theme) {
+      currentTheme.value = theme
+      updateXmindCanvas(undefined, false)
+      localStorage.setItem('theme', theme)
+    }
+
+    function updateXMindStructure (structure, prevStructure) {
+      currentStructure.value = structure
+      if (structure === 'kht') {
+        currentEdgeStyle.value = '5'
+        localStorage.setItem('edgeStyleValue', '5')
+      }
+      if (prevStructure === 'kht') {
+        currentEdgeStyle.value = '1'
+        localStorage.setItem('edgeStyleValue', '1')
+      }
+      localStorage.setItem('structure', structure)
+      updateXmindCanvas(undefined, false)
+    }
+
+    function updateXMindEdgeStyle (edgeStyle) {
+      currentEdgeStyle.value = edgeStyle
+      localStorage.setItem('edgeStyleValue', edgeStyle)
+      updateXmindCanvas(undefined, false)
+    }
+
+    function resetSubjectStyle (isGloab) {
+      if (isGloab) {
+        resetRootNodeStyleFiled(root, COULDRESETFILEDS, true)
+        updateXmindCanvas()
+        return
+      }
+      const data = getTargetDataById(root, currnentNode.value?.data._id)
+      if (data) {
+        resetRootNodeStyleFiled(data, COULDRESETFILEDS, false)
+        updateXmindCanvas()
+      }
+    }
+
+    /**
+     * 重置画布缩放系数克隆画布节点得到html字符串
+     */
+    function getSvgData () {
+      const container = mindContainer
+        .attr('transform', 'translate(0, 0) scale(1)')
+      const { width, height, y, x } = container
+        .node()
+        .getBoundingClientRect()
+      container.attr('transform', `translate(${Math.abs(x) + 20}, ${Math.abs(y) + 20}) scale(1)`)
+      select('#zx-xmind-map-svg')
+        .attr('width', width + 40)
+        .attr('height', height + 40)
+      const cloneSvg = select('#zx-xmind-map-svg')
+        .clone(true)
+        .attr('style', 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);')
+      cloneSvg.select('.map-outter-container')
+        .insert('rect', ':first-child')
+        .attr('x', x - 20)
+        .attr('y', y - 20)
+        .attr('width', width + 40)
+        .attr('height', height + 40)
+        .attr('fill', backgroundColor.value)
+      select('#zx-xmind-map-svg')
+        .attr('width', canvasWidth)
+        .attr('height', canvasHeight)
+      container
+        .attr('transform', eventTransform)
+      cloneSvg.remove()
+      return cloneSvg.node().outerHTML
+    }
+
+    /**
+     * node节点选中高亮样式设置
+     * @param {*} section
+     */
+    function nodeHighLight (id) {
+      select(`#${id}`)
+        .classed('select-node', true)
+        .insert('rect', ':first-child')
+        .attr('class', 'select-rect-border')
+        .attr('stroke', theme[currentTheme.value].select.stroke)
+        .attr('stroke-width', theme[currentTheme.value].select.strokeWidth)
+        .attr('x', d => d.x - d.style.strokeWidth / 2 - 3)
+        .attr('y', d => d.y - d.style.strokeWidth / 2 - 3)
+        .attr('width', d => d.width + (d.style.strokeWidth / 2 + 3) * 2)
+        .attr('height', d => d.height + (d.style.strokeWidth / 2 + 3) * 2)
+        .attr('rx', 4)
+        .attr('ry', 4)
+        .attr('fill', 'transparent')
+    }
+
+    function markHighLight (_this) {
+      select(_this)
+        .classed('mark-select', true)
+        .select('rect')
+        .attr('stroke', theme[currentTheme.value].select.stroke)
+    }
+
+    function mouseStartMoveOnScreen (event) {
+      if (event.buttons === 1 && !readOnly.value) {
+        domainStart = { x: event.x, y: event.y }
+      }
+      if (drawRelationIng.value) {
+        exitDrawRelation()
+      }
+    }
+
+    function mouseMoveIngOnScreen (event) {
+      if (domainStart) {
+        hiddenPopover()
+        removeSummaryNodeHighLight()
+        removeRelationNodeHighLight()
+        drawAllSelectDomain(event, domainStart, updateSelectNodeHighLight)
+      } else if (drawRelationIng.value) {
+        const { x, y } = event
+        const { x: tx, y: ty, k } = eventTransform
+        updateRenderVirtualRelationPath({ x1: (x - tx) / k, y1: (y - ty) / k })
+      } else if (controllerClassName.value) {
+        hasMoveEvent = true
+        if (controllerClassName.value.includes('rect')) {
+          relationPathControlMove(event)
+        } else if (controllerClassName.value.includes('circle')) {
+          relationPathPointMove(event)
+        }
+      }
+    }
+
+    function relationPathControlMove (event) {
+      const k = eventTransform.k
+      const { movementX: x, movementY: y } = event
+      const touchName = controllerClassName.value.split('-')[0]
+      const keyName = touchName === 'start' ? 'source' : 'target'
+      relationNodeSubject.value[keyName].controllerDiff.x += x / k
+      relationNodeSubject.value[keyName].controllerDiff.y += y / k
+      const { relationId, source, target } = relationNodeSubject.value
+      try {
+        const { start, end, c1, c2 } = getNodeRelationPathPoints(source, target)
+        updateRelationElementPos(relationId, touchName, keyName, c1, c2, start, end)
+      } catch (error) {
+        console.warn('The node of the relational connection could not be found')
+      }
+    }
+
+    function relationPathPointMove (event) {
+      const { x, y } = event
+      const { x: tx, y: ty, k } = eventTransform
+      const touchName = controllerClassName.value.split('-')[0]
+      const keyName = touchName === 'start' ? 'source' : 'target'
+      const movePoint = { x: (x - tx) / k, y: (y - ty) / k }
+      const { relationId, source, target } = relationNodeSubject.value
+      const targetNodeData = select(`#${keyName === 'source' ? source.id : target.id}`).datum()
+      const centerPoint = { x: targetNodeData.x + targetNodeData.width / 2, y: targetNodeData.y + targetNodeData.height / 2 }
+      const expression = getLinearExpression(movePoint, centerPoint)
+      const intersectPoints = getRectLineIntersectionPoint({
+        y1: targetNodeData.y - 4,
+        x1: targetNodeData.x + targetNodeData.width + 4,
+        y2: targetNodeData.y + targetNodeData.height + 4,
+        x2: targetNodeData.x - 4
+      }, expression)
+      const targetMinPoint = getMinDistancePoint({ x: movePoint.x, y: movePoint.y }, intersectPoints)
+      relationNodeSubject.value[keyName].pointDiff.x = targetMinPoint.x - targetNodeData.x
+      relationNodeSubject.value[keyName].pointDiff.y = targetMinPoint.y - targetNodeData.y
+      try {
+        const { start, end, c1, c2 } = getNodeRelationPathPoints(source, target)
+        select(`#relation-${relationId}`)
+          .select('.controller-model')
+          .select(`.${touchName}-circle`)
+          .datum(keyName === 'source' ? start : end)
+          .attr('cx', d => d.x)
+          .attr('cy', d => d.y)
+        updateRelationElementPos(relationId, touchName, keyName, c1, c2, start, end)
+      } catch (error) {
+        console.warn('The node of the relational connection could not be found')
+      }
+    }
+
+    function updateRelationElementPos (relationId, touchName, keyName, c1, c2, start, end) {
+      select(`#relation-${relationId}`)
+        .select('.controller-model')
+        .select(`.${touchName}-rect`)
+        .datum(keyName === 'source' ? c1 : c2)
+        .attr('x', d => d.x - 4)
+        .attr('y', d => d.y - 4)
+      select(`#relation-${relationId}`)
+        .select('.rela-relation-path')
+        .attr('d', `M${start.x} ${start.y}, C${c1.x} ${c1.y} ${c2.x} ${c2.y} ${end.x} ${end.y}`)
+      select(`#relation-${relationId}`)
+        .select('.controller-model')
+        .select('.active-rela-relation-path')
+        .attr('d', `M${start.x} ${start.y}, C${c1.x} ${c1.y} ${c2.x} ${c2.y} ${end.x} ${end.y}`)
+      select(`#relation-${relationId}`)
+        .select('.controller-model')
+        .select(`.${touchName}-line`)
+        .datum({ move: keyName === 'source' ? start : end, to: keyName === 'source' ? c1 : c2 })
+        .attr('x1', d => d.move.x)
+        .attr('y1', d => d.move.y)
+        .attr('x2', d => d.to.x)
+        .attr('y2', d => d.to.y)
+      const pathElement = select(`#relation-${relationId}`)
+        .select('.rela-relation-path').node()
+      const pathLength = pathElement.getTotalLength()
+      const textPos = pathElement.getPointAtLength(pathLength / 2)
+      select(`#relation-${relationId}`)
+        .select('text')
+        .attr('x', textPos.x)
+        .attr('y', textPos.y)
+      svg.classed('grabbing', true)
+    }
+
+    function mouseEndMoveOnScreen () {
+      domainStart = null
+      select('.all-select-domain').remove()
+      if (selectNodes.value.length === 1) {
+        currnentNode.value = selectNodes.value[0]
+      }
+      if (controllerClassName.value) {
+        moveControllerEnd()
+      }
+    }
+
+    function drawRelationPathEnd (event) {
+      const target = select(event.target).datum()
+      const relationId = randomId()
+      const source = select('.virtual-relation-path').datum()
+      const { id, minPoint, x, y } = source
+      const targetCenter = {
+        x: target.x + target.width / 2,
+        y: target.y + target.height / 2
+      }
+      const expression = getLinearExpression(minPoint, targetCenter)
+      const intersectPoints = getRectLineIntersectionPoint({
+        y1: target.y - 4,
+        x1: target.x + target.width + 4,
+        y2: target.y + target.height + 4,
+        x2: target.x - 4
+      }, expression)
+      const targetMinPoint = getMinDistancePoint({ x: minPoint.x, y: minPoint.y }, intersectPoints)
+      const unit = x < targetMinPoint.x ? 1 : -1
+      const relationText = '关系'
+      const sourceInfo = {
+        id,
+        pointDiff: { x: minPoint.x - x, y: minPoint.y - y },
+        controllerDiff: { x: unit * 100, y: 0 }
+      }
+      const targetInfo = {
+        id: target.data._id,
+        pointDiff: { x: targetMinPoint.x - target.x, y: targetMinPoint.y - target.y },
+        controllerDiff: { x: -unit * 100, y: 0 }
+      }
+      drawRealRealtionPath(relationId, relationText, sourceInfo, targetInfo)
+      const sourceNodeData = getTargetDataById(root, id)
+      sourceNodeData.relations = [...(sourceNodeData.relations || []), {
+        relationId, sourceInfo, targetInfo, relationText
+      }]
+      storageRootRelaTime(root)
+      appendXmindHistory()
+      exitDrawRelation()
+    }
+
+    function moveControllerEnd () {
+      try {
+        const { relationId, source, target } = relationNodeSubject.value
+        const sourceId = source.id
+        const sourceNodeData = getTargetDataById(root, sourceId)
+        const relations = sourceNodeData.relations
+        const idx = relations.findIndex(o => o.relationId === relationId)
+        const targetRelationItem = relations[idx]
+        if (controllerClassName.value.includes('start')) {
+          relations.splice(idx, 1, {
+            ...targetRelationItem,
+            sourceInfo: source
+          })
+        } else {
+          relations.splice(idx, 1, {
+            ...targetRelationItem,
+            targetInfo: target
+          })
+        }
+        storageRootRelaTime(root)
+        appendXmindHistory()
+      } catch (error) {
+        console.warn('drag node error')
+      }
+      controllerClassName.value = null
+      relationNodeSubject.value = null
+      svg.classed('grabbing', false)
+    }
+
+    function exitDrawRelation () {
+      drawRelationIng.value = false
+      select('.mind-map-relationbox')
+        .select('.virtual-relation-path')
+        .remove()
+    }
+
+    function hiddenPopover () {
+      editorVisible.value = false
+      contextVisible.value = false
+      tiezhiIconVisible.value = false
+      uploadImageVisible.value = false
+      customDeleteModalPos.value = null
+      tipTapPosition.value = null
+      editorPosition.value = null
+      removeMarkHighlight()
+    }
+
+    function removeNodeHighLight () {
+      selectAll('.select-node')
+        .classed('select-node', false)
+        .select('.select-rect-border')
+        .remove()
+      currnentNode.value = null
+      selectNodes.value = []
+      editorVisible.value = false
+    }
+
+    function removeSummaryNodeHighLight () {
+      selectAll('.mind-map-summarybox > g > g')
+        .classed('active-summary-node', false)
+        .select('.select-target-summary')
+        .remove()
+      selectAll('.mind-map-summarybox > g > g')
+        .select('.high-border')
+        .attr('stroke', 'none')
+      selectSummaryId.value = null
+      currentInsertSummaryId.value = null
+    }
+
+    function removeRelationNodeHighLight () {
+      select('.mind-map-relationbox')
+        .selectAll('.active-relation')
+        .classed('active-relation', false)
+        .select('.active-rela-relation-path').attr('opacity', 0)
+        .each(function () {
+          select(this.parentNode)
+            .selectAll('line, rect, circle').style('display', 'none')
+        })
+    }
+
+    function removeMarkHighlight () {
+      selectAll('.mark-select')
+        .classed('mark-select', false)
+        .select('rect')
+        .attr('stroke', 'transparnet')
+    }
+
+    function appendXmindHistory () {
+      currentStep.value = 0
+      historyStep.value.unshift(JSON.parse(JSON.stringify(root)))
+    }
+
+    const duration = computed(() => {
+      if (!editorPosition.value) {
+        return '0.3s'
+      }
+      return 0
+    })
+
+    function shortcutMitters () {
+      mitter.on('select-all', function () {
+        hiddenPopover()
+        removeNodeHighLight()
+        const selections = select('.mind-map-nodebox')
+          .selectAll('.x-mind-nodetheme')
+        selections.nodes().forEach(selection => {
+          selectNodes.value.push(select(selection).datum())
+          const id = select(selection).datum().data._id
+          nodeHighLight(id)
+        })
+        if (selectNodes.value.length > 1) {
+          currnentNode.value = null
+        } else {
+          currnentNode.value = selectNodes.value[0] || null
+        }
+      })
+      mitter.on('insert-brother', function () {
+        const ids = selectNodes.value.map(n => n.data._id)
+        if (ids.length) {
+          batchInsertXmindNode([root], ids, 'brother')
+          updateXmindCanvas()
+        }
+      })
+      mitter.on('insert-child', function () {
+        const ids = selectNodes.value.map(n => n.data._id)
+        if (ids.length) {
+          batchInsertXmindNode([root], ids, 'child')
+          updateXmindCanvas()
+        }
+      })
+      mitter.on('move-up', function () {
+        if (currnentNode.value) {
+          moveXmindNode(root.children || [], currnentNode.value.data._id, 'up')
+          updateXmindCanvas(false)
+        }
+      })
+      mitter.on('move-down', function () {
+        if (currnentNode.value) {
+          moveXmindNode(root.children || [], currnentNode.value.data._id, 'down')
+          updateXmindCanvas(false)
+        }
+      })
+      mitter.on('copy', function () {
+        if (currnentNode.value) {
+          isPastState.value = true
+          copyNodeInstance.value = copyOrCutXmindNode(root.children, root, currnentNode.value.data._id)
+          hiddenPopover()
+        }
+      })
+      mitter.on('cut', function () {
+        if (currnentNode.value && currnentNode.value.parent) {
+          isPastState.value = false
+          copyNodeInstance.value = copyOrCutXmindNode(root.children, root, currnentNode.value.data._id, true)
+          updateXmindCanvas()
+        }
+      })
+      mitter.on('past', function () {
+        if (currnentNode.value && copyNodeInstance.value) {
+          const paseNode = JSON.parse(JSON.stringify(copyNodeInstance.value))
+          if (isPastState.value) {
+            setuniqueId(paseNode, true)
+          }
+          insertXmindNode([root], currnentNode.value.data._id, 'child', paseNode)
+          updateXmindCanvas()
+          if (!isPastState.value) {
+            copyNodeInstance.value = null
+          }
+        }
+      })
+      mitter.on('delete', function () {
+        const ids = selectNodes.value.map(n => n.data._id)
+        if (ids.length) {
+          batchDeleteXmindNode(root.children || [], ids)
+          updateXmindCanvas()
+        }
+      })
+      mitter.on('delete-summary', function () {
+        const ids = selectNodes.value.map(n => n.data._id)
+        if (selectSummaryId.value) {
+          recursiveTreeValue(root, selectSummaryId.value, 'summary', null)
+        } else if (ids.length) {
+          batchRecursiveTreeValue(root, ids, 'summary', null)
+        }
+        updateXmindCanvas()
+      })
+      mitter.on('step-prev', function () {
+        if (historyStep.value.length > 1 && currentStep.value < historyStep.value.length - 1) {
+          currentStep.value += 1
+          root = JSON.parse(JSON.stringify(historyStep.value[currentStep.value]))
+          updateXmindCanvas(undefined, false)
+        }
+      })
+      mitter.on('step-next', function () {
+        if (currentStep.value >= 1) {
+          currentStep.value -= 1
+          root = JSON.parse(JSON.stringify(historyStep.value[currentStep.value]))
+          updateXmindCanvas(undefined, false)
+        }
+      })
+    }
+
+    watch(() => readOnly.value, newVal => {
+      if (newVal) {
+        hiddenPopover()
+        removeNodeHighLight()
+        removeSummaryNodeHighLight()
+        removeRelationNodeHighLight()
+      }
+    })
+
+    return {
+      root,
+      openThumb,
+      readOnly,
+      immersion,
+      editorTypeName,
+      currentTheme,
+      currentStructure,
+      currentEdgeStyle,
+      scaleNumber,
+      historyStep,
+      currentStep,
+      iconTypeName,
+      textLen,
+      nodeCount,
+      backgroundColor,
+      position,
+      currnentNode,
+      contextMenuType,
+      selectNodes,
+      dragIngSubject,
+      uploadType,
+      editorVisible,
+      contextVisible,
+      copyNodeInstance,
+      scaleNumberVisible,
+      tiezhiIconVisible,
+      structureVisible,
+      uploadImageVisible,
+      customDeleteModalPos,
+      tipTapPosition,
+      valueComment,
+      themeValue: theme[currentTheme.value],
+      nodes,
+      edges,
+      thumbXminRef,
+      dataStructureRef,
+      boundingClient,
+      editorNodeValue,
+      drawRelationIng,
+      editorPosition,
+      duration,
+      updateXmindCanvas,
+      setEditableValue,
+      moveXmindMap,
+      setXMindMapScale,
+      hiddenPopover,
+      contextMenuClick,
+      handlerActionClick,
+      selectTiezhiIcon,
+      deleteNodeElement,
+      updateXMindTheme,
+      updateXMindStructure,
+      updateXMindEdgeStyle,
+      resetSubjectStyle,
+      removeNodeHighLight,
+      setNodeImage,
+      setCanvasJson,
+      getCommentHtml,
+      setXMindMapCenter,
+      removeSummaryNodeHighLight,
+      removeRelationNodeHighLight
+    }
+  }
+})
+</script>
+
+<style scoped lang="less">
+#zx-xmind-map {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+  :deep(#zx-xmind-map-svg) {
+    cursor: url('~@/assets/images/default.png'), auto;
+    &.grabbing {
+      cursor: grabbing;
+    }
+    &.moving {
+      cursor: move;
+      .mind-map-summarybox, .mind-map-relationbox {
+        pointer-events: none;
+      }
+    }
+  }
+}
+
+.scale-number-model {
+  position: fixed;
+  width: 130px;
+  color: #fff;
+  text-align: center;
+  line-height: 60px;
+  background: rgba(0, 0, 0, 0.7);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  font-size: 28px;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.x-mind-statistic {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  box-shadow: 0px 0px 18px 5px rgba(0,0,0,0.1);
+  background: #fff;
+  white-space: nowrap;
+  display: flex;
+  padding: 6px 8px;
+  border-radius: 4px;
+  z-index: 1200;
+  user-select: none;
+  p {
+    font-size: 12px;
+    margin: 0 6px;
+    color: #4c4c4c;
+  }
+}
+
+.delete-mark-icon {
+  width: 80px;
+  height: 42px;
+  background: rgba(255,255,255,.9);
+  box-shadow: 0 2px 16px 0 rgba(0,0,0,.3);
+  position: fixed;
+  z-index: 1000;
+  top: 200px;
+  left: 200px;
+  border-radius: 4px;
+  text-align: center;
+  line-height: 42px;
+  i {
+    cursor: url('~@/assets/images/pointer.png'), auto;
+    counter-reset: #4c4c4c;
+  }
+  &:after {
+    content: '';
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid rgba(255,255,255,0.9);
+    border-left: 8px solid transparent;
+    left: 50%;
+    transform: translateX(-50%);
+    top: -16px;
+    position: absolute;
+  }
+}
+
+.x-mind-operate-menu {
+  position: fixed;
+}
+.editor-fade-in-enter-active, .editor-fade-in-leave-active {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  transition: v-bind(duration) ease;
+}
+.editor-fade-in-enter-from,
+.editor-fade-in-leave-to {
+  transform: translateX(-50%) translateY(-30px);
+  opacity: 0;
+}
+
+.scale-fade-in-enter-active, .scale-fade-in-leave-active {
+  transition: 0.5s linear;
+  opacity: 1;
+}
+.scale-fade-in-enter-from,
+.scale-fade-in-leave-to {
+  opacity: 0;
+}
+
+.tiezhi-fade-in-enter-active, .tiezhi-fade-in-leave-active {
+  transition: 0.2s linear;
+  opacity: 1;
+  transform: translateY(0);
+}
+.tiezhi-fade-in-enter-from,
+.tiezhi-fade-in-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+.structure-fade-in-enter-active, .structure-fade-in-leave-active {
+  transition: 0.2s ease-in-out;
+  opacity: 1;
+  transform: translateX(0);
+}
+.structure-fade-in-enter-from,
+.structure-fade-in-leave-to {
+  opacity: 0;
+  transform: translateX(100%);
+}
+</style>
+
+<style lang="less">
+.xmind-readonly {
+  .mind-map-edgebox, .mind-map-nodebox {
+    pointer-events: none;
+  }
+}
+
+.xmind-relationing {
+  .x-mind-node-text,
+  .child-ref-expand,
+  .select-node {
+    pointer-events: none;
+  }
+}
+
+.xmind-node-mark, .xmind-node-link, .xmind-node-comment {
+  g, svg {
+    cursor: url('~@/assets/images/pointer.png'), auto;
+  }
+}
+
+.ant-checkbox-wrapper, .ant-switch, .ant-dropdown-menu-item, .child-ref-expand, .xmind-node-childcount {
+  cursor: url('~@/assets/images/pointer.png'), auto;
+  a {
+    cursor: url('~@/assets/images/pointer.png'), auto;
+  }
+  .ant-checkbox-inner {
+    border-color: #817d7d;
+  }
+}
+
+.rela-relation-path, .nodedragenter-border {
+  animation: relation-path-move 10s infinite linear;
+}
+
+@keyframes relation-path-move {
+  from {
+    stroke-dashoffset: 200;
+  }
+  to {
+    stroke-dashoffset: -200;
+  }
+}
+</style>
