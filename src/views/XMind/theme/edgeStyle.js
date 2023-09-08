@@ -1,13 +1,21 @@
+function getRootLinePath (gradient, lineWidth, { sx, sy }, { tx, ty }) {
+  const gap = Math.abs(ty - sy) < 50 ? 20 : 0
+  const unitX = tx > sx ? 1 : -1
+  const unitY = ty > sy ? -1 : ty < sy ? 1 : 0
+  if (gradient) {
+    lineWidth = Number(lineWidth.split('-')[1])
+    return `M${sx} ${sy} Q${sx + gap * unitX} ${ty} ${tx} ${ty} Q${sx} ${ty} ${sx - (5 + lineWidth)} ${sy} z`
+  }
+
+  return `M${sx} ${sy} Q${sx + 10 * unitX} ${ty + 10 * unitY} ${tx} ${ty}`
+}
+
 export default {
   1: function ({ sourcePoint, targetPoint, isRoot, gradient, lineWidth }) {
     const { sx, sy } = sourcePoint
     const { tx, ty } = targetPoint
     if (isRoot) {
-      if (gradient) {
-        lineWidth = Number(lineWidth.split('-')[1])
-        return `M${sx} ${sy} Q${sx} ${ty} ${tx} ${ty} Q${sx} ${ty} ${sx - (5 + lineWidth)} ${sy} z`
-      }
-      return `M${sx} ${sy} Q${sx} ${ty} ${tx} ${ty}`
+      return getRootLinePath(gradient, lineWidth, sourcePoint, targetPoint)
     }
     if (tx < sx) {
       return `M${sx} ${sy} L${sx - 12} ${sy} Q${sx - 12} ${ty} ${tx} ${ty}`
@@ -19,11 +27,7 @@ export default {
     const { sx, sy } = sourcePoint
     const { tx, ty } = targetPoint
     if (isRoot) {
-      if (gradient) {
-        lineWidth = Number(lineWidth.split('-')[1])
-        return `M${sx} ${sy} Q${sx} ${ty} ${tx} ${ty} Q${sx} ${ty} ${sx - (5 + lineWidth)} ${sy} z`
-      }
-      return `M${sx} ${sy} Q${sx} ${ty} ${tx} ${ty}`
+      return getRootLinePath(gradient, lineWidth, sourcePoint, targetPoint)
     }
     if (tx > sx) {
       if (ty < sy) {
@@ -47,11 +51,7 @@ export default {
     const { sx, sy } = sourcePoint
     const { tx, ty } = targetPoint
     if (isRoot) {
-      if (gradient) {
-        lineWidth = Number(lineWidth.split('-')[1])
-        return `M${sx} ${sy} Q${sx} ${ty} ${tx} ${ty} Q${sx} ${ty} ${sx - (5 + lineWidth)} ${sy} z`
-      }
-      return `M${sx} ${sy} Q${sx} ${ty} ${tx} ${ty}`
+      return getRootLinePath(gradient, lineWidth, sourcePoint, targetPoint)
     }
     if (tx < sx) {
       return `M${sx} ${sy} L${sx - 12} ${sy} L${sx - 12} ${ty} ${tx} ${ty}`
@@ -64,11 +64,7 @@ export default {
     const { tx, ty } = targetPoint
     const diff = Math.abs(tx - sx) / 2
     if (isRoot) {
-      if (gradient) {
-        lineWidth = Number(lineWidth.split('-')[1])
-        return `M${sx} ${sy} Q${sx} ${ty} ${tx} ${ty} Q${sx} ${ty} ${sx - (5 + lineWidth)} ${sy} z`
-      }
-      return `M${sx} ${sy} Q${sx} ${ty} ${tx} ${ty}`
+      return getRootLinePath(gradient, lineWidth, sourcePoint, targetPoint)
     }
     if (tx < sx) {
       return `M${sx} ${sy} C${sx - diff} ${sy} ${tx + diff} ${ty} ${tx} ${ty}`
@@ -76,6 +72,7 @@ export default {
       return `M${sx} ${sy} C${sx + diff} ${sy} ${tx - diff} ${ty} ${tx} ${ty}`
     }
   },
+  // 括号连线
   5: function ({ sourcePoint, targetPoint, isRoot, gradient, lineWidth }) {
     const { sx, sy } = sourcePoint
     const { tx, ty } = targetPoint

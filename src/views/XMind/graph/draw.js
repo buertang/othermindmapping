@@ -698,7 +698,7 @@ export function renderNewEdges (links) {
     .append('path')
     .attr('d', d => {
       const gap = d.source.depth === 0 && structure !== 'kht'
-        ? Math.min(d.source.width / 2, 80) : 0
+        ? Math.min(d.source.width / 2, 60) : 0
       const sourcePoint = {
         sx: d.target.direction === 'left'
           ? d.source.x + gap
@@ -768,7 +768,7 @@ export function renderUpdateEdges (links) {
     .select('path')
     .attr('d', d => {
       const gap = d.source.depth === 0 && structure !== 'kht'
-        ? Math.min(d.source.width / 2, 80) : 0
+        ? Math.min(d.source.width / 2, 60) : 0
       const sourcePoint = {
         sx: d.target.direction === 'left'
           ? d.source.x + gap

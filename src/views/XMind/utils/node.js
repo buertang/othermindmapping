@@ -53,6 +53,9 @@ function dataTreeLayoutPackage (root, theme, direction) {
   firstWalk(nodes, direction, theme)
   secondWalk(nodes, direction, theme)
   thirdWalk(nodes, direction, theme)
+  if (theme !== 'simplicity') {
+    fouthWalks(nodes[0], direction)
+  }
   links = hierarchydata.links()
   return {
     nodes,
@@ -427,6 +430,47 @@ function updateChildren (children, prop, offset) {
     item[prop] += offset
     if (hasChild(item)) {
       updateChildren(item.children, prop, offset)
+    }
+  })
+}
+
+/**
+ * 第四次遍历更新父节点的坐标相对于所有子节点居中
+ * @param {*} rootNode
+ * @param {*} pos
+ * @param {*} side
+ */
+function fouthWalks (rootNode, direction) {
+  const pos = direction === 'bottom' ? 'x' : 'y'
+  const side = direction === 'bottom' ? 'width' : 'height'
+  if (rootNode.children?.length > 1) {
+    const firstChild = rootNode.children[0]
+    const lastChild = rootNode.children[rootNode.children.length - 1]
+    const childHeight = lastChild[pos] - firstChild[pos]
+    const firstChildPosition = rootNode[pos] + rootNode[side] / 2 - childHeight / 2 - firstChild[side] / 2
+    const gap = firstChildPosition - firstChild[pos]
+    firstChild[pos] = firstChildPosition
+    if (hasChild(firstChild)) {
+      childWalks(firstChild.children, gap, pos)
+    }
+    if (hasChild(rootNode.children[0])) {
+      fouthWalks(firstChild, direction)
+    }
+    for (let i = 1; i < rootNode.children.length; i++) {
+      rootNode.children[i][pos] = rootNode.children[i][pos] + gap
+      if (hasChild(rootNode.children[i])) {
+        childWalks(rootNode.children[i].children, gap, pos)
+      }
+      fouthWalks(rootNode.children[i], direction)
+    }
+  }
+}
+
+function childWalks (nodes, gap, pos = 'y') {
+  nodes.forEach(node => {
+    node[pos] += gap
+    if (hasChild(node)) {
+      childWalks(node.children, gap, pos)
     }
   })
 }
