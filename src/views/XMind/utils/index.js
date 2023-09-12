@@ -56,9 +56,24 @@ export function batchInsertXmindNode (nodes, ids, type) {
         ]
       }
       ids.splice(idx, 1)
+      if (ids.length === 0) return
     }
     if (hasChild(nodes[i])) {
       batchInsertXmindNode(nodes[i].children, ids, type)
+    }
+  }
+}
+
+export function batchReferenceStyle (node, ids, style) {
+  const idx = ids.findIndex(id => id === node._id)
+  if (idx > -1) {
+    Object.assign(node, style)
+    ids.splice(idx, 1)
+    if (ids.length === 0) return
+  }
+  if (hasChild(node)) {
+    for (let i = 0; i < node.children.length; i++) {
+      batchReferenceStyle(node.children[i], ids, style)
     }
   }
 }
@@ -447,5 +462,51 @@ export function statisticTreeCount (root) {
   getStatistic(root)
   return {
     len, count
+  }
+}
+
+/**
+ * 节点样式获取
+ */
+export function getNodeCustomStyle (node) {
+  const {
+    fontFamily,
+    fontSize,
+    fontWeight,
+    fontStyle,
+    textDecoration,
+    textColor,
+    strokeColor,
+    strokeStyle,
+    strokeWidth,
+    borderRadius,
+    backgroundColor,
+    lineStyle,
+    lineWidth,
+    lineColor,
+    verticalInner,
+    horizontalInner,
+    horizontalOutter,
+    tiezhiSize
+  } = node
+  return {
+    fontFamily,
+    fontSize,
+    fontWeight,
+    fontStyle,
+    textDecoration,
+    textColor,
+    strokeColor,
+    strokeStyle,
+    strokeWidth,
+    borderRadius,
+    backgroundColor,
+    lineStyle,
+    lineWidth,
+    lineColor,
+    verticalInner,
+    horizontalInner,
+    horizontalOutter,
+    tiezhiSize
   }
 }

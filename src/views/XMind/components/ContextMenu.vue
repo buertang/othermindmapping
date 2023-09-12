@@ -50,6 +50,10 @@ export default defineComponent({
       type: Object,
       default: () => null
     },
+    copyStyle: {
+      type: Object,
+      default: () => null
+    },
     type: String
   },
   setup (props, context) {
@@ -127,6 +131,16 @@ export default defineComponent({
             disabled: false,
             operate: 'copy',
             shortKey: 'Ctrl + C'
+          },
+          {
+            name: '样式复制',
+            disabled: false,
+            operate: 'copy-style'
+          },
+          {
+            name: '引用样式',
+            disabled: !props.copyStyle,
+            operate: 'reference-style'
           },
           {
             name: '粘贴',
@@ -242,6 +256,11 @@ export default defineComponent({
                 warning: true
               }
             ]
+          },
+          {
+            name: '引用样式',
+            disabled: !props.batchNodes.length || !props.copyStyle,
+            operate: 'reference-style'
           },
           {
             name: '收起所有',

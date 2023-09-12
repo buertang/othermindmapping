@@ -23,6 +23,7 @@
       v-if="contextVisible"
       :node="currnentNode"
       :copyNode="copyNodeInstance"
+      :copyStyle="copyStyle"
       :batchNodes="selectNodes"
       :type="contextMenuType"
       @context-click="contextMenuClick"
@@ -140,6 +141,7 @@ import {
   batchInsertXmindNode,
   deleteXmindNode,
   batchDeleteXmindNode,
+  batchReferenceStyle,
   moveXmindNode,
   copyOrCutXmindNode,
   expandAllNodes,
@@ -155,7 +157,8 @@ import {
   exportJSON,
   statisticTreeCount,
   getTargetDataById,
-  resetRootNodeStyleFiled
+  resetRootNodeStyleFiled,
+  getNodeCustomStyle
 } from './utils'
 import {
   createCanvasContainer,
@@ -222,6 +225,7 @@ export default defineComponent({
     const currentStructure = ref(localStorage.getItem('structure') || 'ljjgt')
     const currentEdgeStyle = ref(localStorage.getItem('edgeStyleValue') || '2')
     const copyNodeInstance = ref(null)
+    const copyStyle = ref(null)
     const position = ref({ x: 0, y: 0, tx: 0, ty: 0 })
     const editorTypeName = ref('text')
     const currentMarkIcon = ref(null)
@@ -812,6 +816,21 @@ export default defineComponent({
           isPastState.value = true
           copyNodeInstance.value = copyOrCutXmindNode(root.children, root, currnentNode.value.data._id)
           hiddenPopover()
+          break
+        case 'copy-style':
+          copyStyle.value = getNodeCustomStyle(currnentNode.value.data)
+          console.log(currnentNode.value)
+          hiddenPopover()
+          break
+        case 'reference-style':
+          if (type === 'single') {
+            batchReferenceStyle(root, [currnentNode.value.data._id], copyStyle.value)
+          } else if (type === 'global') {
+            batchReferenceStyle(root, ids, copyStyle.value)
+          }
+          updateXmindCanvas()
+          hiddenPopover()
+          copyStyle.value = null
           break
         case 'cut':
           isPastState.value = false
@@ -1770,6 +1789,7 @@ export default defineComponent({
       currentTheme,
       currentStructure,
       currentEdgeStyle,
+      copyStyle,
       scaleNumber,
       historyStep,
       currentStep,
