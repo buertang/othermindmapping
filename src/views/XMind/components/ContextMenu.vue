@@ -173,7 +173,8 @@ export default defineComponent({
                 name: '概要',
                 disabled: !props.node.data.summary,
                 operate: 'delete-summary',
-                warning: true
+                warning: true,
+                shortKey: 'Ctrl + Delete'
               },
               {
                 name: '节点',
@@ -183,11 +184,6 @@ export default defineComponent({
                 shortKey: 'Delete'
               }
             ]
-          },
-          {
-            name: '收起子主题',
-            disabled: !(props.node.children && props.node.children.length),
-            operate: 'no-expand'
           },
           {
             name: '清空子主题',
@@ -253,7 +249,8 @@ export default defineComponent({
                 name: '概要',
                 disabled: !props.batchNodes.length,
                 operate: 'delete-summary',
-                warning: true
+                warning: true,
+                shortKey: 'Ctrl + Delete'
               }
             ]
           },

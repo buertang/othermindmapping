@@ -703,7 +703,7 @@ export default defineComponent({
     }
 
     function outterContextClick (event) {
-      const [w, h] = [190, 210]
+      const [w, h] = [190, 240]
       const [x, y] = [event.pageX, event.pageY]
       let [tx, ty] = [0, 0]
       x + w > canvasWidth && (tx = -w)
@@ -807,10 +807,6 @@ export default defineComponent({
         case 'down':
           moveXmindNode(root.children || [], currnentNode.value.data._id, 'down')
           updateXmindCanvas(false)
-          break
-        case 'no-expand':
-          toogleExpandXmindNode(root, currnentNode.value.data._id, false)
-          updateXmindCanvas()
           break
         case 'copy':
           isPastState.value = true
@@ -1002,7 +998,7 @@ export default defineComponent({
       currnentNode.value = select(_this).datum()
       const id = currnentNode.value.data._id
       nodeHighLight(id)
-      const [w, h] = [190, 320]
+      const [w, h] = [190, 380]
       const [x, y] = [event.pageX, event.pageY]
       let [tx, ty] = [0, 0]
       x + w > canvasWidth && (tx = -w)
