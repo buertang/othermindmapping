@@ -91,14 +91,20 @@ export default defineComponent({
         const { top, left, width, height } = props.position
         return {
           c1: {
-            top: `${top - 4}px`,
+            top: `${top - 8}px`,
             left: `${left}px`,
-            'border-radius': 0,
-            height: `${height + 8}px`,
-            'line-height': `${height + 8}px`
+            borderRadius: 0,
+            minHeight: `${height + 8}px`,
+            maxWidth: '300px',
+            height: 'auto',
+            lineHeight: 'inherit',
+            padding: '8px'
           },
           c2: {
-            'min-width': `${width || 20}px`
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+            minWidth: 'auto',
+            marginTop: 0
           }
         }
       }
@@ -142,6 +148,7 @@ export default defineComponent({
     outline: none;
     min-width: 360px;
     display: inline-block;
+    margin-top: 12px;
     &:empty:before{
       color: 999;
       font-size: 12px;

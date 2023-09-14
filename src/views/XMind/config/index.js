@@ -263,7 +263,7 @@ export const FONTFAMILYOPTIONS = [
 
 export const FONTSIZEOPTIONS = (function () {
   const cache = []
-  for (let i = 10; i <= 62; i++) {
+  for (let i = 12; i <= 64; i++) {
     if (i % 2 === 0) {
       cache.push({
         label: i,

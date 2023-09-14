@@ -2011,6 +2011,17 @@ export default defineComponent({
   animation: relation-path-move 10s infinite linear;
 }
 
+.node-text-description {
+  display: inline-block;
+  word-break: break-all;
+  white-space: pre-wrap;
+  line-height: inherit;
+  padding: 0;
+  margin: 0;
+  max-width: 300px;
+  overflow: hidden;
+}
+
 @keyframes relation-path-move {
   from {
     stroke-dashoffset: 200;

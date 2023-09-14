@@ -69,12 +69,11 @@ function dataTreeLayoutPackage (root, theme, direction) {
  */
 function calcNodeSize (nodes) {
   nodes.forEach(node => {
-    let { width, height } = createTextNode(
-      node.data.text,
-      node.style.textStyle.fontSize,
-      node.style.textStyle.fontWeight,
-      node.style.textStyle.fontFamily
-    )
+    const text = node.data.text
+    const { fontSize, fontWeight, fontFamily } = node.style.textStyle
+    let { width, height } = getTextNodeRect({ text, fontSize, fontWeight, fontFamily })
+    node.data.foreignObjectWidth = width
+    node.data.foreignObjectHeight = height
     if (node.data.marks && node.data.marks.length) {
       width = width + node.data.marks.length * node.style.markSize - (node.data.marks.length - 1) * node.style.markSize * 0.15 + 6
       height = Math.max(height, node.style.markSize)
@@ -149,6 +148,39 @@ function createTextNode (text, fontSize, fontWeight = 'normal', fontFamily = "�
     width,
     height
   }
+}
+
+/**
+ * 长文本换行后文本宽高获取
+ * @param {*} options
+ */
+function getTextNodeRect (options) {
+  const {
+    text,
+    fontSize,
+    fontWeight = 'normal',
+    fontFamily = "微软雅黑, 'Microsoft YaHei'"
+  } = options
+  const textSpan = document.createElement('p')
+  const spanStyle = {
+    maxWidth: '300px',
+    fontSize: fontSize + 'px',
+    fontWeight: fontWeight,
+    fontFamily: fontFamily,
+    whiteSpace: 'pre-wrap',
+    display: 'inline-block',
+    position: 'fixed',
+    left: '-2000px',
+    wordBreak: 'break-all'
+  }
+  for (const key in spanStyle) {
+    textSpan.style[key] = spanStyle[key]
+  }
+  textSpan.innerText = text
+  document.body.append(textSpan)
+  const textRect = textSpan.getBoundingClientRect()
+  textSpan.remove()
+  return textRect
 }
 
 /**

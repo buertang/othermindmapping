@@ -92,10 +92,10 @@ export function renderNewNodes (nodes, theme, structure) {
     .attr('stroke-dasharray', d => d.style.strokeStyle === 'dashed' ? `8, ${8 + d.style.strokeWidth - 2}` : '1, 0')
 
   enter
-    .append('text')
+    .append('foreignObject')
     .attr('class', 'x-mind-node-text')
-    .attr('style', 'cursor: text;')
-    .text(d => d.data.text)
+    .attr('width', d => d.data.foreignObjectWidth)
+    .attr('height', d => d.data.foreignObjectHeight)
     .attr('x', d => {
       const marks = d.data.marks
       if (marks && marks.length) {
@@ -104,14 +104,15 @@ export function renderNewNodes (nodes, theme, structure) {
         return d.x + d.style.margin._l
       }
     })
-    .attr('y', d => d.y + d.height - d.style.margin._b)
-    .attr('fill', d => d.style.textStyle.color)
-    .attr('font-size', d => d.style.textStyle.fontSize)
-    .attr('font-weight', d => d.style.textStyle.fontWeight)
-    .attr('text-decoration', d => d.style.textStyle.textDecoration)
-    .attr('font-style', d => d.style.textStyle.fontStyle)
-    .attr('font-family', d => d.style.textStyle.fontFamily || "微软雅黑, 'Microsoft YaHei'")
-    .attr('dominant-baseline', 'ideographic')
+    .attr('y', d => d.y + d.height - d.data.foreignObjectHeight - d.style.margin._b)
+    .append('xhtml:p')
+    .attr('class', 'node-text-description')
+    .text(d => d.data.text)
+    .style('color', d => d.style.textStyle.color)
+    .style('font-size', d => d.style.textStyle.fontSize + 'px')
+    .style('font-weight', d => d.style.textStyle.fontWeight)
+    .style('font-style', d => d.style.textStyle.fontStyle)
+    .style('font-family', d => d.style.textStyle.fontFamily || "微软雅黑, 'Microsoft YaHei'")
 
   select('.mind-map-nodebox')
     .selectAll('.x-mind-nodetheme')
@@ -159,7 +160,8 @@ export function renderUpdateNodes (nodes) {
     .selectAll('.x-mind-nodetheme')
     .data(nodes)
     .select('.x-mind-node-text')
-    .text(d => d.data.text)
+    .attr('width', d => d.data.foreignObjectWidth)
+    .attr('height', d => d.data.foreignObjectHeight)
     .attr('x', d => {
       const marks = d.data.marks
       if (marks && marks.length) {
@@ -168,13 +170,14 @@ export function renderUpdateNodes (nodes) {
         return d.x + d.style.margin._l
       }
     })
-    .attr('y', d => d.y + d.height - d.style.margin._b)
-    .attr('fill', d => d.style.textStyle.color)
-    .attr('font-size', d => d.style.textStyle.fontSize)
-    .attr('font-weight', d => d.style.textStyle.fontWeight)
-    .attr('text-decoration', d => d.style.textStyle.textDecoration)
-    .attr('font-style', d => d.style.textStyle.fontStyle)
-    .attr('font-family', d => d.style.textStyle.fontFamily || "微软雅黑, 'Microsoft YaHei'")
+    .attr('y', d => d.y + d.height - d.data.foreignObjectHeight - d.style.margin._b)
+    .select('.node-text-description')
+    .text(d => d.data.text)
+    .style('color', d => d.style.textStyle.color)
+    .style('font-size', d => d.style.textStyle.fontSize + 'px')
+    .style('font-weight', d => d.style.textStyle.fontWeight)
+    .style('font-style', d => d.style.textStyle.fontStyle)
+    .style('font-family', d => d.style.textStyle.fontFamily || "微软雅黑, 'Microsoft YaHei'")
 }
 
 /**
