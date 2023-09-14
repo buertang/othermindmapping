@@ -60,9 +60,10 @@ export function renderNewNodes (nodes, theme, structure) {
     .attr('stroke-dasharray', d => d.style.strokeStyle === 'dashed' ? '8, 8' : '1, 0')
 
   enter
-    .append('text')
+    .append('foreignObject')
     .attr('class', 'thumb-x-mind-node-text')
-    .text(d => d.data.text)
+    .attr('width', d => d.data.foreignObjectWidth)
+    .attr('height', d => d.data.foreignObjectHeight)
     .attr('x', d => {
       const marks = d.data.marks
       if (marks && marks.length) {
@@ -71,13 +72,15 @@ export function renderNewNodes (nodes, theme, structure) {
         return d.x + d.style.margin._l
       }
     })
-    .attr('y', d => d.y + d.height - d.style.margin._b)
-    .attr('fill', d => d.style.textStyle.color)
-    .attr('font-size', d => d.style.textStyle.fontSize)
-    .attr('font-weight', d => d.style.textStyle.fontWeight)
-    .attr('text-decoration', d => d.style.textStyle.textDecoration)
-    .attr('font-style', d => d.style.textStyle.fontStyle)
-    .attr('dominant-baseline', 'ideographic')
+    .attr('y', d => d.y + d.height - d.data.foreignObjectHeight - d.style.margin._b)
+    .append('xhtml:p')
+    .attr('class', 'node-text-description')
+    .text(d => d.data.text)
+    .style('color', d => d.style.textStyle.color)
+    .style('font-size', d => d.style.textStyle.fontSize + 'px')
+    .style('font-weight', d => d.style.textStyle.fontWeight)
+    .style('font-style', d => d.style.textStyle.fontStyle)
+    .style('font-family', d => d.style.textStyle.fontFamily || "微软雅黑, 'Microsoft YaHei'")
 
   select('.thumb-mind-map-nodebox')
     .selectAll('.thumb-x-mind-nodetheme')
@@ -120,7 +123,8 @@ export function renderUpdateNodes (nodes) {
   select('.thumb-mind-map-nodebox')
     .selectAll('.thumb-x-mind-nodetheme')
     .select('.thumb-x-mind-node-text')
-    .text(d => d.data.text)
+    .attr('width', d => d.data.foreignObjectWidth)
+    .attr('height', d => d.data.foreignObjectHeight)
     .attr('x', d => {
       const marks = d.data.marks
       if (marks && marks.length) {
@@ -129,12 +133,14 @@ export function renderUpdateNodes (nodes) {
         return d.x + d.style.margin._l
       }
     })
-    .attr('y', d => d.y + d.height - d.style.margin._b)
-    .attr('fill', d => d.style.textStyle.color)
-    .attr('font-size', d => d.style.textStyle.fontSize)
-    .attr('font-weight', d => d.style.textStyle.fontWeight)
-    .attr('text-decoration', d => d.style.textStyle.textDecoration)
-    .attr('font-style', d => d.style.textStyle.fontStyle)
+    .attr('y', d => d.y + d.height - d.data.foreignObjectHeight - d.style.margin._b)
+    .select('.node-text-description')
+    .text(d => d.data.text)
+    .style('color', d => d.style.textStyle.color)
+    .style('font-size', d => d.style.textStyle.fontSize + 'px')
+    .style('font-weight', d => d.style.textStyle.fontWeight)
+    .style('font-style', d => d.style.textStyle.fontStyle)
+    .style('font-family', d => d.style.textStyle.fontFamily || "微软雅黑, 'Microsoft YaHei'")
 }
 
 /**
@@ -362,7 +368,8 @@ export function renderXmindMarksNodes () {
         height: d.height,
         style: d.style,
         sortIdx: i,
-        marks: d.data.marks
+        marks: d.data.marks,
+        foreignObjectHeight: d.data.foreignObjectHeight
       }
     }))
     .enter()
@@ -370,20 +377,9 @@ export function renderXmindMarksNodes () {
 
   childEnter.append('circle')
     .attr('cx', (d, i) => d.x + d.style.margin._l + i * d.style.markSize * 0.85 + d.style.markSize / 2)
-    .attr('cy', d => d.y + d.height - d.style.margin._b - d.style.textStyle.fontSize / 2 - 2)
+    .attr('cy', d => d.y + d.height - d.foreignObjectHeight / 2 - d.style.margin._b)
     .attr('r', d => d.style.markSize / 2 + 2)
     .attr('fill', '#fff')
-
-  childEnter.append('rect')
-    .attr('x', (d, i) => d.x + d.style.margin._l + i * d.style.markSize * 0.85 - 2)
-    .attr('y', d => d.y + d.height - d.style.margin._b - (d.style.markSize + d.style.textStyle.fontSize) / 2 - 4)
-    .attr('width', d => d.style.markSize + 4)
-    .attr('height', d => d.style.markSize + 4)
-    .attr('fill', 'transparent')
-    .attr('rx', 2)
-    .attr('ry', 2)
-    .attr('stroke-width', 2)
-    .attr('stroke', 'transparent')
 
   childEnter
     .append('svg')
@@ -391,7 +387,7 @@ export function renderXmindMarksNodes () {
     .attr('width', d => d.style.markSize)
     .attr('height', d => d.style.markSize)
     .attr('x', (d, i) => d.x + d.style.margin._l + i * d.style.markSize * 0.85)
-    .attr('y', d => d.y + d.height - d.style.margin._b - (d.style.markSize + d.style.textStyle.fontSize) / 2 - 2)
+    .attr('y', d => d.y + d.height - (d.foreignObjectHeight + d.style.markSize) / 2 - d.style.margin._b)
     .html(d => {
       return select(`#${d.icon}`).node().innerHTML
     })

@@ -70,8 +70,8 @@ function dataTreeLayoutPackage (root, theme, direction) {
 function calcNodeSize (nodes) {
   nodes.forEach(node => {
     const text = node.data.text
-    const { fontSize, fontWeight, fontFamily } = node.style.textStyle
-    let { width, height } = getTextNodeRect({ text, fontSize, fontWeight, fontFamily })
+    const { fontSize, fontWeight, fontFamily, fontStyle } = node.style.textStyle
+    let { width, height } = getTextNodeRect({ text, fontSize, fontWeight, fontFamily, fontStyle })
     node.data.foreignObjectWidth = width
     node.data.foreignObjectHeight = height
     if (node.data.marks && node.data.marks.length) {
@@ -159,14 +159,16 @@ function getTextNodeRect (options) {
     text,
     fontSize,
     fontWeight = 'normal',
-    fontFamily = "微软雅黑, 'Microsoft YaHei'"
+    fontFamily = "微软雅黑, 'Microsoft YaHei'",
+    fontStyle = 'normal'
   } = options
   const textSpan = document.createElement('p')
   const spanStyle = {
     maxWidth: '300px',
     fontSize: fontSize + 'px',
-    fontWeight: fontWeight,
-    fontFamily: fontFamily,
+    fontWeight,
+    fontFamily,
+    fontStyle,
     whiteSpace: 'pre-wrap',
     display: 'inline-block',
     position: 'fixed',
@@ -178,9 +180,12 @@ function getTextNodeRect (options) {
   }
   textSpan.innerText = text
   document.body.append(textSpan)
-  const textRect = textSpan.getBoundingClientRect()
+  const { width, height } = textSpan.getBoundingClientRect()
   textSpan.remove()
-  return textRect
+  return {
+    width: fontStyle === 'italic' ? width + 2 : width,
+    height
+  }
 }
 
 /**

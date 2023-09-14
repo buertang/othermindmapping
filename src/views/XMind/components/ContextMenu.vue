@@ -150,6 +150,7 @@ export default defineComponent({
           },
           {
             name: '删除',
+            warning: true,
             children: [
               {
                 name: '贴纸',
@@ -184,13 +185,6 @@ export default defineComponent({
                 shortKey: 'Delete'
               }
             ]
-          },
-          {
-            name: '清空子主题',
-            disabled: !(props.node.children && props.node.children.length),
-            operate: 'clear-children',
-            warning: true,
-            visible: ['single']
           }
         ]
       } else {
@@ -219,6 +213,7 @@ export default defineComponent({
           },
           {
             name: '删除',
+            warning: true,
             children: [
               {
                 name: '主题',

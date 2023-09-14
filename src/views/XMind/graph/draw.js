@@ -113,6 +113,7 @@ export function renderNewNodes (nodes, theme, structure) {
     .style('font-weight', d => d.style.textStyle.fontWeight)
     .style('font-style', d => d.style.textStyle.fontStyle)
     .style('font-family', d => d.style.textStyle.fontFamily || "微软雅黑, 'Microsoft YaHei'")
+    .style('text-decoration', d => d.style.textStyle.textDecoration)
 
   select('.mind-map-nodebox')
     .selectAll('.x-mind-nodetheme')
@@ -178,6 +179,7 @@ export function renderUpdateNodes (nodes) {
     .style('font-weight', d => d.style.textStyle.fontWeight)
     .style('font-style', d => d.style.textStyle.fontStyle)
     .style('font-family', d => d.style.textStyle.fontFamily || "微软雅黑, 'Microsoft YaHei'")
+    .style('text-decoration', d => d.style.textStyle.textDecoration)
 }
 
 /**
@@ -414,7 +416,8 @@ export function renderXmindMarksNodes () {
         height: d.height,
         style: d.style,
         sortIdx: i,
-        marks: d.data.marks
+        marks: d.data.marks,
+        foreignObjectHeight: d.data.foreignObjectHeight
       }
     }))
     .enter()
@@ -431,13 +434,13 @@ export function renderXmindMarksNodes () {
 
   childEnter.append('circle')
     .attr('cx', (d, i) => d.x + d.style.margin._l + i * d.style.markSize * 0.85 + d.style.markSize / 2)
-    .attr('cy', d => d.y + d.height - d.style.margin._b - d.style.textStyle.fontSize / 2 - 2)
+    .attr('cy', d => d.y + d.height - d.foreignObjectHeight / 2 - d.style.margin._b)
     .attr('r', d => d.style.markSize / 2 + 2)
     .attr('fill', '#fff')
 
   childEnter.append('rect')
     .attr('x', (d, i) => d.x + d.style.margin._l + i * d.style.markSize * 0.85 - 2)
-    .attr('y', d => d.y + d.height - d.style.margin._b - (d.style.markSize + d.style.textStyle.fontSize) / 2 - 4)
+    .attr('y', d => d.y + d.height - (d.foreignObjectHeight + d.style.markSize) / 2 - d.style.margin._b - 2)
     .attr('width', d => d.style.markSize + 4)
     .attr('height', d => d.style.markSize + 4)
     .attr('fill', 'transparent')
@@ -452,7 +455,7 @@ export function renderXmindMarksNodes () {
     .attr('width', d => d.style.markSize)
     .attr('height', d => d.style.markSize)
     .attr('x', (d, i) => d.x + d.style.margin._l + i * d.style.markSize * 0.85)
-    .attr('y', d => d.y + d.height - d.style.margin._b - (d.style.markSize + d.style.textStyle.fontSize) / 2 - 2)
+    .attr('y', d => d.y + d.height - (d.foreignObjectHeight + d.style.markSize) / 2 - d.style.margin._b)
     .html(d => {
       return select(`#${d.icon}`).node().innerHTML
     })

@@ -815,7 +815,6 @@ export default defineComponent({
           break
         case 'copy-style':
           copyStyle.value = getNodeCustomStyle(currnentNode.value.data)
-          console.log(currnentNode.value)
           hiddenPopover()
           break
         case 'reference-style':
@@ -883,10 +882,6 @@ export default defineComponent({
           break
         case 'expand-all':
           expandAllNodes(root, true)
-          updateXmindCanvas()
-          break
-        case 'clear-children':
-          recursiveTreeValue(root, currnentNode.value.data._id, 'children', null)
           updateXmindCanvas()
           break
         case 'delete':
@@ -1031,7 +1026,6 @@ export default defineComponent({
         .attr('opacity', 1)
       if (dragIngSubject.value) {
         const data = select(_this).datum()
-        console.log(data)
         dragEnterNodeId = data.data._id
         const strokeWidth = data.style.strokeWidth / 2
         const isExist = !select('.nodedragenter-border').empty()
@@ -2012,14 +2006,12 @@ export default defineComponent({
 }
 
 .node-text-description {
-  display: inline-block;
   word-break: break-all;
   white-space: pre-wrap;
   line-height: inherit;
   padding: 0;
   margin: 0;
   max-width: 300px;
-  overflow: hidden;
 }
 
 @keyframes relation-path-move {

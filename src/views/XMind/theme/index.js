@@ -36,7 +36,7 @@ export default {
           linkSize: 18,
           tagSize: 12,
           tagColors: ['#409eff', '#67c23a', '#e6a23c', '#f56c6c'],
-          spacing: 15
+          spacing: 36
         }
       }
     },
@@ -147,7 +147,7 @@ export default {
           linkSize: 18,
           tagSize: 12,
           tagColors: ['#409eff', '#67c23a', '#e6a23c', '#f56c6c'].reverse(),
-          spacing: 15
+          spacing: 36
         }
       }
     },
@@ -257,7 +257,7 @@ export default {
           linkSize: 18,
           tagSize: 12,
           tagColors: ['#409eff', '#67c23a', '#e6a23c', '#f56c6c'],
-          spacing: 15
+          spacing: 36
         }
       }
     },
@@ -368,7 +368,7 @@ export default {
           linkSize: 18,
           tagSize: 12,
           tagColors: ['#409eff', '#67c23a', '#e6a23c', '#f56c6c'],
-          spacing: 15
+          spacing: 36
         }
       }
     },

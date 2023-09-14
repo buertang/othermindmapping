@@ -315,10 +315,6 @@ export const TEXTDECARATIONOPTIONS = [
     value: 'none'
   },
   {
-    label: '上划线',
-    value: 'overline'
-  },
-  {
     label: '中划线',
     value: 'line-through'
   },
