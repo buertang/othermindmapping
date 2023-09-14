@@ -23,7 +23,7 @@
           <a-button
             v-show="currentId === 'jiegou'"
             type="link"
-            size="small">链接线样式</a-button>
+            size="small">分支样式</a-button>
         </a-popover>
       </p>
       <i class="ri-close-fill" @click="closeModal"></i>

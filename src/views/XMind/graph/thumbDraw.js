@@ -155,63 +155,6 @@ export function renderDeleteNodes (nodes) {
     .remove()
 }
 
-export function renderExpandNodeIcon () {
-  const themeName = xmindTheme.name
-  select('.thumb-mind-map-nodebox')
-    .selectAll('.thumb-child-ref-expand').remove()
-  const expandNodesEnter = select('.thumb-mind-map-nodebox')
-    .selectAll('.thumb-x-mind-nodetheme')
-    .filter(node => node.children?.length)
-    .append('g')
-    .attr('class', 'thumb-child-ref-expand')
-
-  expandNodesEnter
-    .append('circle')
-    .attr('class', 'thumb-expand-circle')
-    .attr('cx', d => {
-      return d.direction === 'bottom'
-        ? d.x + d.width / 2
-        : d.direction === 'left'
-          ? d.x - 12 : d.x + d.width + 12
-    })
-    .attr('cy', d => d.direction !== 'bottom'
-      ? d.y + d.height / 2 + (themeName === 'simplicity' && d.depth > 1 ? d.height / 2 : 0)
-      : d.y + d.height + 8)
-    .attr('r', 4)
-    .attr('fill', '#fff')
-    .attr('stroke', d => d.style.lineStyle.fill)
-    .attr('opacity', 0)
-
-  expandNodesEnter
-    .append('circle')
-    .attr('class', 'thumb-expand-circle')
-    .attr('cx', d => d.direction === 'left' ? d.x - 12 : d.direction === 'right' ? d.x + d.width + 12 : d.x + d.width / 2)
-    .attr('cy',
-      d => d.direction !== 'bottom'
-        ? d.y + d.height / 2 + (themeName === 'simplicity' && d.depth > 1 ? d.height / 2 : 0)
-        : d.y + d.height + 8)
-    .attr('r', 12)
-    .attr('fill', 'transparent')
-
-  expandNodesEnter
-    .append('path')
-    .attr('class', 'thumb-expand-path')
-    .attr('d', d => {
-      if (d.direction === 'left') {
-        return `M${d.x - 14} ${d.y + d.height / (themeName === 'simplicity' && d.depth > 1 ? 1 : 2)} L${d.x - 10} ${d.y + d.height / (themeName === 'simplicity' && d.depth > 1 ? 1 : 2)}`
-      }
-      if (d.direction === 'right') {
-        return `M${d.x + d.width + 10} ${d.y + d.height / (themeName === 'simplicity' && d.depth > 1 ? 1 : 2)} L${d.x + d.width + 14} ${d.y + d.height / (themeName === 'simplicity' && d.depth > 1 ? 1 : 2)}`
-      }
-      if (d.direction === 'bottom') {
-        return `M${d.x + d.width / 2 - 2} ${d.y + d.height + 8} L${d.x + d.width / 2 + 2} ${d.y + d.height + 8}`
-      }
-    })
-    .attr('stroke', d => d.style.collapseColor || d.style.lineStyle.fill)
-    .attr('stroke-width', 2)
-    .attr('opacity', 0)
-}
-
 export function renderXmindNodeTags () {
   select('.thumb-mind-map-nodebox')
     .selectAll('.thumb-xmind-node-tags')
@@ -393,132 +336,6 @@ export function renderXmindMarksNodes () {
     })
 }
 
-export function renderXmindLinkNodes () {
-  nodeContainer
-    .selectAll('.thumb-x-mind-nodetheme')
-    .filter(n => !n.data.link)
-    .select('.thumb-xmind-node-link')
-    .remove()
-
-  const needRenderNodes = nodeContainer
-    .selectAll('.thumb-x-mind-nodetheme')
-    .filter(n => n.data.link)
-  needRenderNodes.filter(function () {
-    return !select(this)
-      .select('.thumb-xmind-node-link')
-      .empty()
-  })
-    .select('.thumb-xmind-node-link')
-    .attr('transform', d => {
-      return `translate(0, ${Math.min((d.style.linkSize - d.style.textStyle.fontSize) / 2, 0)})`
-    })
-    .select('svg')
-    .attr('x', d => d.x + d.width - d.style.margin._r - d.style.linkSize - (d.data.comment ? 8 + d.style.linkSize : 0))
-    .attr('y', d => d.y + d.height - d.style.margin._t - d.style.linkSize)
-    .select('a')
-    .attr('xlink:title', d => d.data.link)
-    .attr('href', d => `${d.data.link}`)
-    .select('svg')
-    .attr('width', d => d.style.linkSize)
-    .attr('height', d => d.style.linkSize)
-    .attr('fill', d => d.style.textStyle.color)
-    .html(select('#icon-link').node().innerHTML)
-    .append('rect')
-    .attr('x', 0)
-    .attr('y', 0)
-    .attr('width', 1024)
-    .attr('height', 1024)
-    .attr('fill', 'transparent')
-
-  needRenderNodes.filter(function () {
-    return select(this)
-      .select('.thumb-xmind-node-link')
-      .empty()
-  })
-    .append('g')
-    .attr('class', 'thumb-xmind-node-link')
-    .append('svg')
-    .attr('x', d => d.x + d.width - d.style.margin._r - d.style.linkSize - (d.data.comment ? 8 + d.style.linkSize : 0))
-    .attr('y', d => d.y + d.height - d.style.margin._t - d.style.linkSize)
-    .append('a')
-    .attr('target', '_blank')
-    .attr('xlink:title', d => d.data.link)
-    .attr('href', d => `${d.data.link}`)
-    .append('svg')
-    .attr('width', d => d.style.linkSize)
-    .attr('height', d => d.style.linkSize)
-    .attr('fill', d => d.style.textStyle.color)
-    .attr('viewBox', '0 0 1024 1024')
-    .html(select('#icon-link').node().innerHTML)
-    .append('rect')
-    .attr('x', 0)
-    .attr('y', 0)
-    .attr('width', 1024)
-    .attr('height', 1024)
-    .attr('fill', 'transparent')
-}
-
-export function renderXmindCommentNodes () {
-  nodeContainer
-    .selectAll('.thumb-x-mind-nodetheme')
-    .filter(n => !n.data.comment)
-    .select('.thumb-xmind-node-comment')
-    .remove()
-
-  const needRenderNodes = nodeContainer
-    .selectAll('.thumb-x-mind-nodetheme')
-    .filter(n => n.data.comment)
-  needRenderNodes.filter(function () {
-    return !select(this)
-      .select('.thumb-xmind-node-comment')
-      .empty()
-  })
-    .select('.thumb-xmind-node-comment')
-    .attr('transform', d => {
-      return `translate(0, ${Math.min((d.style.linkSize - d.style.textStyle.fontSize) / 2, 0)})`
-    })
-    .select('svg')
-    .attr('x', d => d.x + d.width - d.style.margin._r - d.style.linkSize)
-    .attr('y', d => d.y + d.height - d.style.margin._t - d.style.linkSize)
-    .select('svg')
-    .attr('width', d => d.style.linkSize)
-    .attr('height', d => d.style.linkSize)
-    .attr('fill', d => d.style.textStyle.color)
-    .html(select('#icon-article').node().innerHTML)
-    .append('rect')
-    .attr('x', 0)
-    .attr('y', 0)
-    .attr('width', 1024)
-    .attr('height', 1024)
-    .attr('fill', 'transparent')
-
-  needRenderNodes.filter(function () {
-    return select(this)
-      .select('.thumb-xmind-node-comment')
-      .empty()
-  })
-    .append('g')
-    .attr('class', 'thumb-xmind-node-comment')
-    .attr('transform', d => {
-      return `translate(0, ${Math.min((d.style.linkSize - d.style.textStyle.fontSize) / 2, 0)})`
-    })
-    .append('svg')
-    .attr('x', d => d.x + d.width - d.style.margin._r - d.style.linkSize)
-    .attr('y', d => d.y + d.height - d.style.margin._t - d.style.linkSize)
-    .append('svg')
-    .attr('width', d => d.style.linkSize)
-    .attr('height', d => d.style.linkSize)
-    .attr('fill', d => d.style.textStyle.color)
-    .attr('viewBox', '0 0 1024 1024')
-    .html(select('#icon-article').node().innerHTML)
-    .append('rect')
-    .attr('x', 0)
-    .attr('y', 0)
-    .attr('width', 1024)
-    .attr('height', 1024)
-    .attr('fill', 'transparent')
-}
-
 export function renderChildCountNode () {
   const radius = 9
   nodeContainer
@@ -613,12 +430,9 @@ export function renderChildCountNode () {
 }
 
 export function renderXmindOtherElement (relationNodes) {
-  renderExpandNodeIcon()
   renderXmindNodeTags()
   renderXmindPImageNodes()
   renderXmindTiezhiNodes()
-  renderXmindLinkNodes()
-  renderXmindCommentNodes()
   renderXmindMarksNodes()
   renderChildCountNode()
   renderNewSummaryNode()

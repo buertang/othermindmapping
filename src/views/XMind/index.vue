@@ -1314,8 +1314,8 @@ export default defineComponent({
         localStorage.setItem('edgeStyleValue', '5')
       }
       if (prevStructure === 'kht') {
-        currentEdgeStyle.value = '1'
-        localStorage.setItem('edgeStyleValue', '1')
+        currentEdgeStyle.value = '2'
+        localStorage.setItem('edgeStyleValue', '2')
       }
       localStorage.setItem('structure', structure)
       updateXmindCanvas(undefined, false)

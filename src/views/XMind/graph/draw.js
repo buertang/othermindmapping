@@ -1257,6 +1257,7 @@ export function updateRedrawNodeStyle ({ filedName, filedValue, id }) {
  */
 export function createCustomXMindDEFS () {
   select('#icon-article').selectAll('path').attr('fill', null)
+  select('#icon-link').selectAll('path').attr('fill', null)
   const DEFS = select('#zx-xmind-map-svg').append('defs')
   // 连线终点处未选择状态箭头绘制
   DEFS.append('marker')
