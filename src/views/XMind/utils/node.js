@@ -486,23 +486,54 @@ function fouthWalks (rootNode, direction) {
     const childHeight = lastChild[pos] - firstChild[pos]
     const firstChildPosition = rootNode[pos] + rootNode[side] / 2 - childHeight / 2 - firstChild[side] / 2
     const gap = firstChildPosition - firstChild[pos]
-    firstChild[pos] = firstChildPosition
-    if (hasChild(firstChild)) {
-      childWalks(firstChild.children, gap, pos)
-    }
-    if (hasChild(rootNode.children[0])) {
-      fouthWalks(firstChild, direction)
-    }
-    for (let i = 1; i < rootNode.children.length; i++) {
-      rootNode.children[i][pos] = rootNode.children[i][pos] + gap
-      if (hasChild(rootNode.children[i])) {
-        childWalks(rootNode.children[i].children, gap, pos)
+    console.log(gap)
+    if (gap >= 0) {
+      firstChild[pos] = firstChildPosition
+      if (hasChild(firstChild)) {
+        childWalks(firstChild.children, gap, pos)
+        fouthWalks(firstChild, direction)
       }
-      fouthWalks(rootNode.children[i], direction)
+      for (let i = 1; i < rootNode.children.length; i++) {
+        rootNode.children[i][pos] = rootNode.children[i][pos] + gap
+        if (hasChild(rootNode.children[i])) {
+          childWalks(rootNode.children[i].children, gap, pos)
+          fouthWalks(rootNode.children[i], direction)
+        }
+      }
+    } else {
+      rootNode[pos] -= gap / 2
+      if (rootNode.parent?.children) {
+        againUpdatePos(rootNode.parent.children, gap / 4, pos)
+      }
+      for (let i = 0; i < rootNode.children.length; i++) {
+        if (hasChild(rootNode.children[i])) {
+          fouthWalks(rootNode.children[i], direction)
+        }
+      }
     }
   }
 }
 
+/**
+ * @param {*} nodes
+ * @param {*} distance
+ * @param {*} pos
+ */
+function againUpdatePos (nodes, distance, pos) {
+  for (let i = 0; i < nodes.length; i++) {
+    nodes[i][pos] += distance
+    if (hasChild(nodes[i])) {
+      againUpdatePos(nodes[i].children, distance, pos)
+    }
+  }
+}
+
+/**
+ * 子节点递归更新x/y坐标
+ * @param {*} nodes
+ * @param {*} gap
+ * @param {*} pos
+ */
 function childWalks (nodes, gap, pos = 'y') {
   nodes.forEach(node => {
     node[pos] += gap
