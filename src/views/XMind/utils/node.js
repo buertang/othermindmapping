@@ -53,9 +53,6 @@ function dataTreeLayoutPackage (root, theme, direction) {
   firstWalk(nodes, direction, theme)
   secondWalk(nodes, direction, theme)
   thirdWalk(nodes, direction, theme)
-  if (theme !== 'simplicity') {
-    fouthWalks(nodes[0], direction)
-  }
   links = hierarchydata.links()
   return {
     nodes,
@@ -467,78 +464,6 @@ function updateChildren (children, prop, offset) {
     item[prop] += offset
     if (hasChild(item)) {
       updateChildren(item.children, prop, offset)
-    }
-  })
-}
-
-/**
- * 第四次遍历更新父节点的坐标相对于所有子节点居中
- * @param {*} rootNode
- * @param {*} pos
- * @param {*} side
- */
-function fouthWalks (rootNode, direction) {
-  const pos = direction === 'bottom' ? 'x' : 'y'
-  const side = direction === 'bottom' ? 'width' : 'height'
-  if (rootNode.children?.length > 1) {
-    const firstChild = rootNode.children[0]
-    const lastChild = rootNode.children[rootNode.children.length - 1]
-    const childHeight = lastChild[pos] - firstChild[pos]
-    const firstChildPosition = rootNode[pos] + rootNode[side] / 2 - childHeight / 2 - firstChild[side] / 2
-    const gap = firstChildPosition - firstChild[pos]
-    console.log(gap)
-    if (gap >= 0) {
-      firstChild[pos] = firstChildPosition
-      if (hasChild(firstChild)) {
-        childWalks(firstChild.children, gap, pos)
-        fouthWalks(firstChild, direction)
-      }
-      for (let i = 1; i < rootNode.children.length; i++) {
-        rootNode.children[i][pos] = rootNode.children[i][pos] + gap
-        if (hasChild(rootNode.children[i])) {
-          childWalks(rootNode.children[i].children, gap, pos)
-          fouthWalks(rootNode.children[i], direction)
-        }
-      }
-    } else {
-      rootNode[pos] -= gap / 2
-      if (rootNode.parent?.children) {
-        againUpdatePos(rootNode.parent.children, gap / 4, pos)
-      }
-      for (let i = 0; i < rootNode.children.length; i++) {
-        if (hasChild(rootNode.children[i])) {
-          fouthWalks(rootNode.children[i], direction)
-        }
-      }
-    }
-  }
-}
-
-/**
- * @param {*} nodes
- * @param {*} distance
- * @param {*} pos
- */
-function againUpdatePos (nodes, distance, pos) {
-  for (let i = 0; i < nodes.length; i++) {
-    nodes[i][pos] += distance
-    if (hasChild(nodes[i])) {
-      againUpdatePos(nodes[i].children, distance, pos)
-    }
-  }
-}
-
-/**
- * 子节点递归更新x/y坐标
- * @param {*} nodes
- * @param {*} gap
- * @param {*} pos
- */
-function childWalks (nodes, gap, pos = 'y') {
-  nodes.forEach(node => {
-    node[pos] += gap
-    if (hasChild(node)) {
-      childWalks(node.children, gap, pos)
     }
   })
 }
