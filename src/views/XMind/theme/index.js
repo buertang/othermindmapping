@@ -106,8 +106,8 @@ export default {
       strokeWidth: 2,
       stroke: '#2EBDFF'
     },
-    summaryLineColor: '#00CED1',
-    summaryTextColor: '#00CED1'
+    summaryLineColor: '#4c4c4c',
+    summaryTextColor: '#4c4c4c'
   },
 
   // 简约系

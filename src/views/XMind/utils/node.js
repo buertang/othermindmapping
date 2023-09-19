@@ -341,8 +341,12 @@ function secondWalk (nodes, direction, themeName) {
     nodes.forEach(node => {
       if (hasChild(node)) {
         if (node.depth < 1 || themeName !== 'simplicity') {
-          const y = node.y + node.height / 2 - node.childrenAreaHeight / 2
-          let startY = y
+          const firstChild = node.children[0]
+          const lastChild = node.children[node.children.length - 1]
+          let startY = node.y + node.height / 2 - node.childrenAreaHeight / 2
+          if (firstChild.height !== lastChild.height) {
+            startY = node.height / 2 + node.y - (node.childrenAreaHeight - (firstChild.height + lastChild.height) / 2) / 2 - firstChild.height / 2
+          }
           node.children.forEach(n => {
             n.y = startY
             startY += n.height + 16
@@ -383,7 +387,9 @@ function thirdWalk (nodes, direction, themeName) {
       if (node.depth < 1 || themeName !== 'simplicity') {
         const difference = node.childrenAreaHeight - node.height
         if (difference > 0) {
-          updateBrothers(node, difference / 2, direction)
+          const upOffset = node.y - node.children[0].y
+          const downOffset = node.children[node.children.length - 1].y + node.children[node.children.length - 1].height - node.y - node.height
+          updateBrothers(node, upOffset, downOffset, direction)
         }
       } else {
         if (hasChild(node)) {
@@ -399,7 +405,9 @@ function thirdWalk (nodes, direction, themeName) {
     nodes.forEach(node => {
       const difference = node.childrenAreaHeight - node.width
       if (difference > 0) {
-        updateBrothers(node, difference / 2, direction)
+        const upOffset = node.x - node.children[0].x
+        const downOffset = node.children[node.children.length - 1].x + node.children[node.children.length - 1].width - node.x - node.width
+        updateBrothers(node, upOffset, downOffset, direction)
       }
     })
   }
@@ -411,24 +419,25 @@ function thirdWalk (nodes, direction, themeName) {
  * @param {*} addHeight
  * @param { String } direction 子节点展开方向
  */
-function updateBrothers (node, addHeight, direction) {
+function updateBrothers (node, upOffset, downOffset, direction) {
   if (node.parent) {
     const childrenList = node.parent.children
     const index = childrenList.findIndex(item => item === node)
     childrenList.forEach((item, _index) => {
       if (item === node) return
-      let _offset = 0
       if (_index < index) {
-        _offset = -addHeight
+        item[direction !== 'bottom' ? 'y' : 'x'] -= upOffset
+        if (hasChild(item)) {
+          updateChildren(item.children, direction !== 'bottom' ? 'y' : 'x', -upOffset)
+        }
       } else if (_index > index) {
-        _offset = addHeight
-      }
-      item[direction !== 'bottom' ? 'y' : 'x'] += _offset
-      if (hasChild(item)) {
-        updateChildren(item.children, direction !== 'bottom' ? 'y' : 'x', _offset)
+        item[direction !== 'bottom' ? 'y' : 'x'] += downOffset
+        if (hasChild(item)) {
+          updateChildren(item.children, direction !== 'bottom' ? 'y' : 'x', downOffset)
+        }
       }
     })
-    updateBrothers(node.parent, addHeight, direction)
+    updateBrothers(node.parent, upOffset, downOffset, direction)
   }
 }
 
