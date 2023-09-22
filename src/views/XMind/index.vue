@@ -133,7 +133,7 @@ import { select, selectAll } from 'd3-selection'
 import { zoom as d3Zoom, zoomIdentity } from 'd3-zoom'
 import { preventWindowDefault, shortcutKeydown } from './shortcutKey'
 import { ref, defineComponent, onMounted, nextTick, computed, onBeforeUnmount, watch } from 'vue'
-import { getLinearExpression, getMinDistancePoint, getRectLineIntersectionPoint, collideRect } from './utils/math'
+import { getLinearExpression, getMinDistancePoint, getRectLineIntersectionPoint, collideRect, isRectangleInside } from './utils/math'
 import { randomId, dataTreeLayoutPackage, getXmindSummaryPos, getNodeRelationPathPoints, setuniqueId } from './utils/node'
 import {
   debounce,
@@ -201,6 +201,8 @@ let eventTransform = null
 let domainStart = null
 let hasMoveEvent = false
 let dragEnterNodeId = null
+let summaryArea = null
+let summaryBrothers = []
 const debounceUpdateFileds = ['textColor', 'strokeColor', 'backgroundColor', 'lineColor']
 export default defineComponent({
   components: {
@@ -249,11 +251,12 @@ export default defineComponent({
     const tipTapPosition = ref(null)
     const valueComment = ref(null)
     const boundingClient = ref(null)
-    const selectSummaryId = ref(null)
+    const selectCombinationId = ref(null)
     const editorNodeValue = ref(null)
     const currentInsertSummaryId = ref(null)
     const drawRelationIng = ref(false)
     const controllerClassName = ref(null)
+    const summaryControllerName = ref(null)
     const relationNodeSubject = ref(null)
     const isPastState = ref(true)
     const editorPosition = ref(null)
@@ -741,12 +744,19 @@ export default defineComponent({
         appendXmindHistory()
         return
       }
-      recursiveTreeValue(
-        root,
-        editorTypeName === 'summary' ? selectSummaryId.value : currnentNode.value.data._id,
-        editorTypeName,
-        value
-      )
+      if (editorTypeName === 'summary') {
+        const ids = selectCombinationId.value.split('-')
+        const target = getTargetDataById(root, ids[0])
+        const summary = target.targetSummarys.find(o => o.id === ids[1])
+        summary.text = value
+      } else {
+        recursiveTreeValue(
+          root,
+          currnentNode.value.data._id,
+          editorTypeName,
+          value
+        )
+      }
       updateXmindCanvas()
     }
 
@@ -845,14 +855,6 @@ export default defineComponent({
             recursiveTreeValue(root, currnentNode.value.data._id, 'imageInfo', null)
           } else if (type === 'global') {
             batchRecursiveTreeValue(root, ids, 'imageInfo', null)
-          }
-          updateXmindCanvas()
-          break
-        case 'delete-summary':
-          if (type === 'single') {
-            recursiveTreeValue(root, currnentNode.value.data._id, 'summary', null)
-          } else if (type === 'global') {
-            batchRecursiveTreeValue(root, ids, 'summary', null)
           }
           updateXmindCanvas()
           break
@@ -957,16 +959,26 @@ export default defineComponent({
           renderVirtualRelationPath({ x: x - 4, y: y - 4, width: width + 8, height: height + 8, id })
           break
         }
-        case 'insert-summary':
-          if (!currnentNode.value.data.summary) {
-            currentInsertSummaryId.value = currnentNode.value.data._id
-            recursiveTreeValue(root, currnentNode.value.data._id, 'summary', '概要')
+        case 'insert-summary': {
+          const targetSummarys = currnentNode.value.data.targetSummarys
+          const currentId = currnentNode.value.data._id
+          if (!targetSummarys?.length) {
+            currentInsertSummaryId.value = `${currentId}-${currentId}`
+            recursiveTreeValue(root, currentId, 'targetSummarys', [{ id: currentId, text: '概要' }])
             updateXmindCanvas()
           } else {
-            summaryHandlerMouseEnter(currnentNode.value.data._id)
-            summaryHandlerClick(currnentNode.value.data._id)
+            if (!targetSummarys.find(o => o.id === currentId)) {
+              currentInsertSummaryId.value = `${currentId}-${currentId}`
+              targetSummarys.push({ id: currentId, text: '概要' })
+              recursiveTreeValue(root, currentId, 'targetSummarys', targetSummarys.map(o => ({ id: o.id, text: o.text })))
+              updateXmindCanvas()
+              return
+            }
+            summaryHandlerMouseEnter(`${currentId}-${currentId}`)
+            summaryHandlerClick(`${currentId}-${currentId}`)
           }
           break
+        }
         case 'export-svg':
           exportSVG(getSvgData())
           break
@@ -1061,9 +1073,9 @@ export default defineComponent({
     }
 
     function summaryHandlerMouseEnter (parentId, _event, _this) {
-      const id = parentId || select(_this).datum().parentId
-      if (select(`#summary-path-${id}`).select('.select-target-summary').empty()) {
-        select(`#summary-path-${id}`)
+      const combinationId = parentId || select(_this).datum().parentId
+      if (select(`#summary-path-${combinationId}`).select('.select-target-summary').empty()) {
+        select(`#summary-path-${combinationId}`)
           .select('.high-border')
           .attr('stroke', 'rgb(46,189,255)')
           .attr('stroke-dasharray', function () {
@@ -1074,21 +1086,21 @@ export default defineComponent({
           .attr('stroke-dasharray', function () {
             return `${select(this).node().getTotalLength()} 0`
           })
-        const parentNode = select(`#${id}`).datum()
-        const {
-          minX,
-          maxX,
-          minY,
-          maxY
-        } = getXmindSummaryPos(parentNode)
-        const dir = parentNode.direction === 'right'
+        const ids = combinationId.split('-')
+        const [sourceId, targetId] = [ids[0], ids[1]]
+        const sourceNode = select(`#${sourceId}`).datum()
+        const targetNode = select(`#${targetId}`).datum()
+        const { minX, minY } = getXmindSummaryPos(sourceNode)
+        const { maxX, maxY } = getXmindSummaryPos(targetNode)
+        const dir = sourceNode.direction === 'right'
         const [width, height] = [maxX - minX + 2, maxY - minY + 16]
-        select(`#summary-path-${id}`)
+        const [x, y] = [minX + (dir ? -8 : 4), minY - 8]
+        select(`#summary-path-${combinationId}`)
           .select('g')
           .append('rect')
           .attr('class', 'select-target-summary')
-          .attr('x', minX + (dir ? -8 : 4))
-          .attr('y', minY - 8)
+          .attr('x', x)
+          .attr('y', y)
           .attr('width', width)
           .attr('height', height)
           .attr('stroke-width', 2)
@@ -1104,6 +1116,36 @@ export default defineComponent({
           .attr('stroke-dasharray', function () {
             return `${select(this).node().getTotalLength()} 0`
           })
+        select(`#summary-path-${combinationId}`)
+          .select('g')
+          .selectAll('.control-point')
+          .data(['up', 'down'])
+          .enter()
+          .append('rect')
+          .attr('class', d => `control-point ${d}`)
+          .attr('x', x + width / 2 - 4)
+          .attr('y', (_d, idx) => idx === 0 ? y - 4 : y + height - 4)
+          .attr('width', 8)
+          .attr('height', 8)
+          .attr('stroke-width', 2)
+          .attr('stroke', 'rgb(46,189,255)')
+          .attr('fill', '#fff')
+          .attr('opacity', 0)
+          .attr('style', 'cursor: n-resize;')
+          .on('mousedown', function (event) {
+            event.stopPropagation()
+            summaryControllerName.value = select(this).attr('class')
+            const sourcedata = select(`#${sourceId}`).datum()
+            const selectSummaryNode = select('.select-target-summary')
+            const initMinY = Number(selectSummaryNode.attr('y'))
+            const initMaxY = initMinY + Number(selectSummaryNode.attr('height'))
+            const { minY, maxY } = getXmindSummaryPos(sourcedata.parent)
+            summaryBrothers = sourcedata.parent.children
+            summaryArea = {
+              upArea: [minY - 8, initMinY],
+              downArea: [initMaxY, maxY + 8]
+            }
+          })
       }
     }
 
@@ -1114,7 +1156,7 @@ export default defineComponent({
           .select('.high-border')
           .attr('stroke', 'none')
         select(_this)
-          .select('.select-target-summary')
+          .selectAll('.select-target-summary, .control-point')
           .remove()
       }
     }
@@ -1127,7 +1169,7 @@ export default defineComponent({
       selectAll('.mind-map-summarybox > g > g')
         .filter(n => n.parentId !== id)
         .classed('active-summary-node', false)
-        .select('.select-target-summary')
+        .selectAll('.select-target-summary, .control-point')
         .remove()
       selectAll('.mind-map-summarybox > g > g')
         .filter(n => n.parentId !== id)
@@ -1136,15 +1178,17 @@ export default defineComponent({
       select(`#summary-path-${id}`)
         .select('g')
         .classed('active-summary-node', true)
-      selectSummaryId.value = id
+        .selectAll('.control-point')
+        .attr('opacity', 1)
+      selectCombinationId.value = id
     }
 
     function summaryHandlerDblclick (event, _this) {
       event.stopPropagation()
       if (readOnly.value) return
-      const id = select(_this).datum().parentId
+      const combinationId = select(_this).datum().parentId
       editorTypeName.value = 'summary'
-      editorNodeValue.value = select(`#${id}`).datum().data.summary
+      editorNodeValue.value = select(`#summary-path-${combinationId} > g > text`).text()
       editorVisible.value = true
     }
 
@@ -1402,6 +1446,9 @@ export default defineComponent({
     function mouseStartMoveOnScreen (event) {
       if (event.buttons === 1 && !readOnly.value) {
         domainStart = { x: event.x, y: event.y }
+        hiddenPopover()
+        removeSummaryNodeHighLight()
+        removeRelationNodeHighLight()
       }
       if (drawRelationIng.value) {
         exitDrawRelation()
@@ -1410,9 +1457,6 @@ export default defineComponent({
 
     function mouseMoveIngOnScreen (event) {
       if (domainStart) {
-        hiddenPopover()
-        removeSummaryNodeHighLight()
-        removeRelationNodeHighLight()
         drawAllSelectDomain(event, domainStart, updateSelectNodeHighLight)
       } else if (drawRelationIng.value) {
         const { x, y } = event
@@ -1425,7 +1469,45 @@ export default defineComponent({
         } else if (controllerClassName.value.includes('circle')) {
           relationPathPointMove(event)
         }
+      } else if (summaryControllerName.value) {
+        summaryControlMove(event)
       }
+    }
+
+    function summaryControlMove (event) {
+      const y = event.movementY / eventTransform.k
+      const pageY = event.pageY
+      const targetEle = select('.mind-map-summarybox .select-target-summary')
+      const height = Number(targetEle.attr('height'))
+      const oldY = Number(targetEle.attr('y'))
+      const controlEle = select(`.${summaryControllerName.value.split(' ')[1]}`)
+      const controlEleY = controlEle.node().getBoundingClientRect().y
+      const controlY = Number(controlEle.attr('y'))
+      // 鼠标y坐标不在区域y坐标区间内不执行拖动
+      if ((y < 0 && pageY > controlEleY) || (y > 0 && pageY < controlEleY)) {
+        return
+      }
+      const idx = pageY > controlEleY ? 1 : 0
+      if (summaryControllerName.value.includes('down')) {
+        if ((height + y + oldY <= summaryArea.downArea[0]) || ((height + y + oldY >= summaryArea.downArea[1]))) {
+          targetEle.attr('height', summaryArea.downArea[idx] - oldY)
+          controlEle.attr('y', summaryArea.downArea[idx] - 4)
+          return
+        }
+        targetEle.attr('height', height + y)
+        controlEle.attr('y', controlY + y)
+      } else if (summaryControllerName.value.includes('up')) {
+        if ((oldY + y <= summaryArea.upArea[0]) || (oldY + y >= summaryArea.upArea[1])) {
+          targetEle.attr('y', summaryArea.upArea[idx])
+          targetEle.attr('height', height - summaryArea.upArea[idx] + oldY)
+          controlEle.attr('y', controlY + summaryArea.upArea[idx] - oldY)
+          return
+        }
+        targetEle.attr('y', oldY + y)
+        targetEle.attr('height', height - y)
+        controlEle.attr('y', controlY + y)
+      }
+      svg.classed('n-resize', true)
     }
 
     function relationPathControlMove (event) {
@@ -1519,6 +1601,54 @@ export default defineComponent({
       if (controllerClassName.value) {
         moveControllerEnd()
       }
+      if (summaryControllerName.value) {
+        moveSummaryControlEnd()
+      }
+    }
+
+    /**
+     * 概要控制点移动后抬起的一瞬间获取被概要区域包围的所有兄弟节点
+     */
+    function moveSummaryControlEnd () {
+      const summaryLineArea = select('.select-target-summary')
+      const sourceRect = { x: '', y: '', width: '', height: '' }
+      for (const key in sourceRect) {
+        sourceRect[key] = Number(summaryLineArea.attr(key))
+      }
+      const cacheIds = []
+      for (let i = 0; i < summaryBrothers.length; i++) {
+        if (isRectangleInside(sourceRect, summaryBrothers[i])) {
+          cacheIds.push(summaryBrothers[i].data._id)
+        }
+      }
+      const combinationIds = selectCombinationId.value.split('-')
+      if (combinationIds[0] === cacheIds[0]) {
+        const target = getTargetDataById(root, combinationIds[0])
+        const targetSummarys = target.targetSummarys
+        if (cacheIds[cacheIds.length - 1] !== combinationIds[1]) {
+          const summary = targetSummarys.find(o => o.id === combinationIds[1])
+          summary.id = cacheIds[cacheIds.length - 1]
+        }
+      } else {
+        const target = getTargetDataById(root, combinationIds[0])
+        const idx = target.targetSummarys.findIndex(o => o.id === combinationIds[1])
+        const text = target.targetSummarys[idx].text
+        if (idx > -1) {
+          target.targetSummarys.splice(idx, 1)
+        }
+        const newSource = getTargetDataById(root, cacheIds[0])
+        const summary = (newSource.targetSummarys || []).find(o => o.id === cacheIds[cacheIds.length - 1])
+        if (!summary) {
+          newSource.targetSummarys = [...(newSource.targetSummarys || []), {
+            id: cacheIds[cacheIds.length - 1],
+            text
+          }]
+        }
+      }
+      removeSummaryNodeHighLight()
+      svg.classed('n-resize', false)
+      summaryControllerName.value = false
+      updateXmindCanvas()
     }
 
     function drawRelationPathEnd (event) {
@@ -1620,12 +1750,12 @@ export default defineComponent({
     function removeSummaryNodeHighLight () {
       selectAll('.mind-map-summarybox > g > g')
         .classed('active-summary-node', false)
-        .select('.select-target-summary')
+        .selectAll('.select-target-summary, .control-point')
         .remove()
       selectAll('.mind-map-summarybox > g > g')
         .select('.high-border')
         .attr('stroke', 'none')
-      selectSummaryId.value = null
+      selectCombinationId.value = null
       currentInsertSummaryId.value = null
     }
 
@@ -1734,16 +1864,18 @@ export default defineComponent({
         if (ids.length) {
           batchDeleteXmindNode(root.children || [], ids)
           updateXmindCanvas()
+          return
         }
-      })
-      mitter.on('delete-summary', function () {
-        const ids = selectNodes.value.map(n => n.data._id)
-        if (selectSummaryId.value) {
-          recursiveTreeValue(root, selectSummaryId.value, 'summary', null)
-        } else if (ids.length) {
-          batchRecursiveTreeValue(root, ids, 'summary', null)
+        if (selectCombinationId.value) {
+          const nodeIds = selectCombinationId.value.split('-')
+          const target = getTargetDataById(root, nodeIds[0])
+          const targetSummarys = target.targetSummarys
+          const idx = targetSummarys.findIndex(o => o.id === nodeIds[1])
+          if (idx > -1) {
+            targetSummarys.splice(idx, 1)
+            updateXmindCanvas()
+          }
         }
-        updateXmindCanvas()
       })
       mitter.on('step-prev', function () {
         if (historyStep.value.length > 1 && currentStep.value < historyStep.value.length - 1) {
@@ -1854,6 +1986,9 @@ export default defineComponent({
       .mind-map-summarybox, .mind-map-relationbox {
         pointer-events: none;
       }
+    }
+    &.n-resize {
+      cursor: n-resize;
     }
   }
 }

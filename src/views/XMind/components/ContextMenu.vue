@@ -171,13 +171,6 @@ export default defineComponent({
                 warning: true
               },
               {
-                name: '概要',
-                disabled: !props.node.data.summary,
-                operate: 'delete-summary',
-                warning: true,
-                shortKey: 'Ctrl + Delete'
-              },
-              {
                 name: '节点',
                 disabled: !props.node.parent,
                 operate: 'delete',
@@ -239,13 +232,6 @@ export default defineComponent({
                 disabled: !props.batchNodes.length,
                 operate: 'delete-link',
                 warning: true
-              },
-              {
-                name: '概要',
-                disabled: !props.batchNodes.length,
-                operate: 'delete-summary',
-                warning: true,
-                shortKey: 'Ctrl + Delete'
               }
             ]
           },

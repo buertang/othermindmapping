@@ -24,7 +24,7 @@ const placeHolderNameMap = {
   text: '请输入主题名称',
   link: '请输入主题超链接URL（以https://或者http://开头）',
   tag: '请输入主题标签名（多个标签用;隔开）',
-  summary: '请输入制图概要信息',
+  summary: '请输入主题概要信息',
   relation: '请输入主题之间的关系'
 }
 export default defineComponent({
@@ -88,7 +88,7 @@ export default defineComponent({
 
     const editorStyle = computed(() => {
       if (props.position) {
-        const { top, left, width, height } = props.position
+        const { top, left, height } = props.position
         return {
           c1: {
             top: `${top - 8}px`,

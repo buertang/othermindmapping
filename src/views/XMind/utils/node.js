@@ -113,10 +113,13 @@ function calcNodeSize (nodes) {
       node.width = width + node.style.margin._l + node.style.margin._r
       node.height = height + node.style.margin._t + node.style.margin._b
     }
-    if (node.data.summary) {
-      const { width, height } = createTextNode(node.data.summary, 12, 'bold')
-      node.summaryWidth = width + 20
-      node.summaryHeight = height + 12
+    if (node.data.targetSummarys?.length) {
+      const summarys = node.data.targetSummarys
+      for (let i = 0; i < summarys.length; i++) {
+        const { width, height } = createTextNode(summarys[i].text, 12, 'bold')
+        summarys[i].summaryWidth = width + 20
+        summarys[i].summaryHeight = height + 12
+      }
     }
   })
 }
@@ -516,7 +519,9 @@ function setMaxSummaryPosX (posXList, id) {
  * @returns
  */
 function getTargetMaxPosX (node, maxPosX, id) {
-  maxPosX += (node.summaryWidth ? node.summaryWidth + 42 : 0)
+  const targetSummarys = node.data.targetSummarys
+  const summaryWidth = targetSummarys?.length ? Math.max(...targetSummarys.map(o => o.summaryWidth)) : 0
+  maxPosX += (summaryWidth ? summaryWidth + 42 : 0)
   if (node.parent && node.parent.data._id !== id) {
     maxPosX = getTargetMaxPosX(node.parent, maxPosX, id)
   }
@@ -547,7 +552,9 @@ function setMinSummaryPosX (posXList, id) {
  * @returns
  */
 function getTargetMinPosX (node, minPosX, id) {
-  minPosX -= (node.summaryWidth ? node.summaryWidth + 42 : 0)
+  const targetSummarys = node.data.targetSummarys
+  const summaryWidth = targetSummarys?.length ? Math.max(...targetSummarys.map(o => o.summaryWidth)) : 0
+  minPosX -= (summaryWidth ? summaryWidth + 42 : 0)
   if (node.parent && node.parent.data._id !== id) {
     minPosX = getTargetMinPosX(node.parent, minPosX, id)
   }
@@ -555,7 +562,7 @@ function getTargetMinPosX (node, minPosX, id) {
 }
 
 /**
- *
+ * 获取当前节点包括字节点四个顶点坐标
  * @param {*} node
  * @returns
  */

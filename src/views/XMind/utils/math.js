@@ -144,7 +144,25 @@ export function collideRect (sourceR, targetR) {
 
   if (maxX - minX <= sourceR.width + targetR.width && maxY - minY <= sourceR.height + targetR.height) {
     return true
-  } else {
-    return false
   }
+  return false
+}
+
+/**
+ * 判断一个矩形是否在某一个矩形区域内
+ * @param {*} sourceRect
+ * @param {*} targetRect
+ */
+export function isRectangleInside (sourceRect, targetRect) {
+  const { x: sourceX, y: sourceY, width: sourceWidth, height: sourceHeight } = sourceRect
+  const { x: targetX, y: targetY, width: targetWidth, height: targetHeight } = targetRect
+  if (
+    (targetX > sourceX) &&
+    (targetY > sourceY) &&
+    (targetX + targetWidth < sourceX + sourceWidth) &&
+    (targetY + targetHeight < sourceY + sourceHeight)
+  ) {
+    return true
+  }
+  return false
 }

@@ -850,90 +850,94 @@ export function renderNewSummaryNode (id) {
   if (xmindStructure === 'zzjgt') return
   select('.mind-map-nodebox')
     .selectAll('.x-mind-nodetheme')
-    .filter(node => node.data.summary)
+    .filter(node => node.data.targetSummarys?.length)
     .each(node => {
+      const targetSummarys = node.data.targetSummarys
       const dir = node.direction === 'right'
-      const {
-        minX,
-        maxX,
-        minY,
-        maxY
-      } = getXmindSummaryPos(node)
-      const startX = dir ? maxX : minX
+      const { minX, minY } = getXmindSummaryPos(node)
       const unit = dir ? 1 : '-1'
-      const controlPos = { x: startX + 12 * unit, y: (maxY + minY) / 2 }
-      summaryContainer
-        .append('g')
-        .attr('id', `summary-path-${node.data._id}`)
-        .append('path')
-        .attr('stroke-width', 2)
-        .attr('stroke', xmindTheme.summaryLineColor)
-        .attr('d', `M${startX}, ${minY} Q${startX + 10 * unit}, ${minY} ${controlPos.x}, ${controlPos.y} Q${startX + 10 * unit}, ${maxY} ${startX}, ${maxY}`)
-        .attr('fill', 'none')
-        .attr('stroke-linecap', 'buut')
-        .each(function () {
-          select(this.parentNode)
-            .append('path')
-            .attr('d', `M${controlPos.x}, ${controlPos.y} L${controlPos.x + 10 * unit}, ${controlPos.y}`)
-            .attr('stroke-width', 2)
-            .attr('stroke', xmindTheme.summaryLineColor)
-            .each(function () {
-              select(this.parentNode)
-                .append('g')
-                .datum({ parentId: node.data._id })
-                .on('mouseenter', function (event) {
-                  mitter.emit('summary-handler-mouseenter', { event, _this: this })
-                })
-                .on('mouseleave', function (event) {
-                  mitter.emit('summary-handler-mouseleave', { event, _this: this })
-                })
-                .on('click', function (event) {
-                  mitter.emit('summary-handler-click', { event, _this: this })
-                })
-                .on('dblclick', function (event) {
-                  mitter.emit('summary-handler-dblclick', { event, _this: this })
-                })
-                .attr('fill', 'transparent')
-                .append('rect')
-                .attr('class', 'rect-border')
-                .attr('x', controlPos.x + 16 * unit - (dir ? 0 : node.summaryWidth))
-                .attr('y', controlPos.y - node.summaryHeight / 2)
-                .attr('width', node.summaryWidth)
-                .attr('height', node.summaryHeight)
-                .attr('rx', 4)
-                .attr('ry', 4)
-                .attr('stroke', xmindTheme.summaryLineColor)
-                .attr('stroke-width', '2')
-                .attr('fill', 'none')
-                .each(function () {
-                  select(this.parentNode)
-                    .append('text')
-                    .attr('x', controlPos.x + (16 + 10) * unit - (dir ? 0 : node.summaryWidth - 10 - 10))
-                    .attr('y', controlPos.y - node.summaryHeight / 2 + 6)
-                    .attr('dominant-baseline', 'text-before-edge')
-                    .text(node.data.summary)
-                    .attr('fill', xmindTheme.summaryTextColor)
-                    .attr('font-weight', 'bold')
-                    .attr('font-size', 12)
-                    .each(function () {
-                      select(this.parentNode)
-                        .append('rect')
-                        .attr('class', 'high-border')
-                        .attr('x', controlPos.x + 13 * unit - (dir ? 0 : node.summaryWidth + 6))
-                        .attr('y', controlPos.y - node.summaryHeight / 2 - 3)
-                        .attr('width', node.summaryWidth + 6)
-                        .attr('height', node.summaryHeight + 6)
-                        .attr('rx', 4)
-                        .attr('ry', 4)
-                        .attr('stroke', 'none')
-                        .attr('stroke-width', '2')
-                        .attr('fill', 'transparent')
-                    })
-                })
-            })
-        })
+      for (let i = 0; i < targetSummarys.length; i++) {
+        const targetId = targetSummarys[i].id
+        const targetNode = select(`#${targetId}`)
+        const { maxX, maxY } = getXmindSummaryPos(targetNode.datum())
+        const startX = dir ? maxX : minX
+        const controlPos = { x: startX + 12 * unit, y: (maxY + minY) / 2 }
+        summaryContainer
+          .append('g')
+          .attr('id', `summary-path-${node.data._id}-${targetId}`)
+          .append('path')
+          .attr('stroke-width', 2)
+          .attr('stroke', xmindTheme.summaryLineColor)
+          .attr('d', `M${startX}, ${minY} Q${startX + 10 * unit}, ${minY} ${controlPos.x}, ${controlPos.y} Q${startX + 10 * unit}, ${maxY} ${startX}, ${maxY}`)
+          .attr('fill', 'none')
+          .attr('stroke-linecap', 'buut')
+          .each(function () {
+            select(this.parentNode)
+              .append('path')
+              .attr('d', `M${controlPos.x}, ${controlPos.y} L${controlPos.x + 10 * unit}, ${controlPos.y}`)
+              .attr('stroke-width', 2)
+              .attr('stroke', xmindTheme.summaryLineColor)
+              .each(function () {
+                select(this.parentNode)
+                  .append('g')
+                  .datum({ parentId: `${node.data._id}-${targetId}` })
+                  .on('mousedown', function (event) {
+                    event.stopPropagation()
+                  })
+                  .on('mouseenter', function (event) {
+                    mitter.emit('summary-handler-mouseenter', { event, _this: this })
+                  })
+                  .on('mouseleave', function (event) {
+                    mitter.emit('summary-handler-mouseleave', { event, _this: this })
+                  })
+                  .on('click', function (event) {
+                    mitter.emit('summary-handler-click', { event, _this: this })
+                  })
+                  .on('dblclick', function (event) {
+                    mitter.emit('summary-handler-dblclick', { event, _this: this })
+                  })
+                  .attr('fill', 'transparent')
+                  .append('rect')
+                  .attr('class', 'rect-border')
+                  .attr('x', controlPos.x + 16 * unit - (dir ? 0 : targetSummarys[i].summaryWidth))
+                  .attr('y', controlPos.y - targetSummarys[i].summaryHeight / 2)
+                  .attr('width', targetSummarys[i].summaryWidth)
+                  .attr('height', targetSummarys[i].summaryHeight)
+                  .attr('rx', 4)
+                  .attr('ry', 4)
+                  .attr('stroke', xmindTheme.summaryLineColor)
+                  .attr('stroke-width', '2')
+                  .attr('fill', 'none')
+                  .each(function () {
+                    select(this.parentNode)
+                      .append('text')
+                      .attr('x', controlPos.x + (16 + 10) * unit - (dir ? 0 : targetSummarys[i].summaryWidth - 10 - 10))
+                      .attr('y', controlPos.y - targetSummarys[i].summaryHeight / 2 + 6)
+                      .attr('dominant-baseline', 'text-before-edge')
+                      .text(targetSummarys[i].text)
+                      .attr('fill', xmindTheme.summaryTextColor)
+                      .attr('font-weight', 'bold')
+                      .attr('font-size', 12)
+                      .each(function () {
+                        select(this.parentNode)
+                          .append('rect')
+                          .attr('class', 'high-border')
+                          .attr('x', controlPos.x + 13 * unit - (dir ? 0 : targetSummarys[i].summaryWidth + 6))
+                          .attr('y', controlPos.y - targetSummarys[i].summaryHeight / 2 - 3)
+                          .attr('width', targetSummarys[i].summaryWidth + 6)
+                          .attr('height', targetSummarys[i].summaryHeight + 6)
+                          .attr('rx', 4)
+                          .attr('ry', 4)
+                          .attr('stroke', 'none')
+                          .attr('stroke-width', '2')
+                          .attr('fill', 'transparent')
+                      })
+                  })
+              })
+          })
+      }
     })
-  requestAnimationSummary(id)
+  id && requestAnimationSummary(id)
 }
 
 /**

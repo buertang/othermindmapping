@@ -133,7 +133,7 @@ export default defineComponent({
       { name: '编辑主题', icon: 'ri-translate-2', keyname: '左键双击' },
       { name: '粘贴主题', icon: 'ri-file-copy-2-line', keyname: 'Ctrl + V' },
       { name: '删除主题', icon: 'ri-delete-bin-4-line', keyname: 'Delete' },
-      { name: '删除概要', icon: 'ri-delete-column', keyname: 'Ctrl + Delete' },
+      { name: '删除概要', icon: 'ri-delete-column', keyname: 'Delete' },
       { name: '画布回退', icon: 'ri-reply-line', keyname: 'Ctrl + Z' },
       { name: '画布前进', icon: 'ri-share-forward-line', keyname: 'Ctrl + Y' },
       { name: '全选主题', icon: 'ri-checkbox-multiple-line', keyname: 'Ctrl + A' },
