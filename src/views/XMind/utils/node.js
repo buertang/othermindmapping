@@ -173,7 +173,8 @@ function getTextNodeRect (options) {
     display: 'inline-block',
     position: 'fixed',
     left: '-2000px',
-    wordBreak: 'break-all'
+    wordBreak: 'break-all',
+    lineBreak: 'anywhere'
   }
   for (const key in spanStyle) {
     textSpan.style[key] = spanStyle[key]

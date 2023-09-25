@@ -104,7 +104,8 @@ export default defineComponent({
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-all',
             minWidth: 'auto',
-            marginTop: 0
+            marginTop: 0,
+            lineBreak: 'anywhere'
           }
         }
       }

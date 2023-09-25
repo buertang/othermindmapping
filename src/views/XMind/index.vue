@@ -1601,9 +1601,11 @@ export default defineComponent({
      */
     function moveSummaryControlEnd () {
       const summaryLineArea = select('.select-target-summary')
-      const sourceRect = { x: '', y: '', width: '', height: '' }
-      for (const key in sourceRect) {
-        sourceRect[key] = Number(summaryLineArea.attr(key))
+      const sourceRect = {
+        x: -99999,
+        y: Number(summaryLineArea.attr('y')),
+        width: 99999 * 2,
+        height: Number(summaryLineArea.attr('height'))
       }
       const cacheIds = []
       for (let i = 0; i < summaryBrothers.length; i++) {
@@ -2141,6 +2143,7 @@ export default defineComponent({
   padding: 0;
   margin: 0;
   max-width: 300px;
+  line-break: anywhere;
 }
 
 @keyframes relation-path-move {

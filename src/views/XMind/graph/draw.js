@@ -854,7 +854,7 @@ export function renderNewSummaryNode (id) {
     .each(node => {
       const targetSummarys = node.data.targetSummarys
       const dir = node.direction === 'right'
-      const { minX, minY } = getXmindSummaryPos(node)
+      const minY = getXmindSummaryPos(node).minY
       const unit = dir ? 1 : '-1'
       for (let i = 0; i < targetSummarys.length; i++) {
         const targetId = targetSummarys[i].id
@@ -863,21 +863,18 @@ export function renderNewSummaryNode (id) {
         const brothers = targetNode.datum().parent?.children || []
         const startIdx = brothers.findIndex(o => o.data._id === node.data._id)
         const endIdx = brothers.findIndex(o => o.data._id === targetId)
-        let maxX = -Infinity
+        let [minX, maxX] = [Infinity, -Infinity]
         const [upArea, downArea] = [[], []]
         downArea[1] = getXmindSummaryPos(brothers[brothers.length - 1]).maxY + 8
         upArea[0] = getXmindSummaryPos(brothers[0]).minY - 8
         for (let i = startIdx; i <= endIdx; i++) {
           const limitRect = getXmindSummaryPos(brothers[i])
-          if (i === startIdx) {
-            downArea[0] = limitRect.maxY + 8
-          }
-          if (i === endIdx) {
-            upArea[1] = limitRect.minY - 8
-          }
+          i === startIdx && (downArea[0] = limitRect.maxY + 8)
+          i === endIdx && (upArea[1] = limitRect.minY - 8)
           maxX = Math.max(maxX, limitRect.maxX)
+          minX = Math.min(minX, limitRect.minX)
         }
-        const { maxY } = getXmindSummaryPos(targetNode.datum())
+        const maxY = getXmindSummaryPos(targetNode.datum()).maxY
         const startX = dir ? maxX : minX
         const controlPos = { x: startX + 12 * unit, y: (maxY + minY) / 2 }
         summaryContainer
