@@ -216,8 +216,8 @@ export default {
       strokeWidth: 2,
       stroke: 'rgb(46,189,255)'
     },
-    summaryLineColor: '#548FD8',
-    summaryTextColor: '#548FD8'
+    summaryLineColor: '#000',
+    summaryTextColor: '#000'
   },
 
   // 浅蓝色系
