@@ -23,7 +23,7 @@ export default {
           },
           lineStyle: {
             fill: '#FF0000',
-            lineWidth: 'a-5'
+            lineWidth: 2
           },
           margin: {
             _t: 10,
@@ -134,7 +134,7 @@ export default {
           },
           lineStyle: {
             fill: '#548FD8',
-            lineWidth: 'a-5'
+            lineWidth: 2
           },
           margin: {
             _t: 10,
@@ -244,7 +244,7 @@ export default {
           },
           lineStyle: {
             fill: '#008B8B',
-            lineWidth: 'a-5'
+            lineWidth: 2
           },
           margin: {
             _t: 10,
@@ -355,7 +355,7 @@ export default {
           },
           lineStyle: {
             fill: '#9400D3',
-            lineWidth: 'a-5'
+            lineWidth: 2
           },
           margin: {
             _t: 10,
