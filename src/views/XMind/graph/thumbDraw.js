@@ -604,69 +604,92 @@ export function renderNewSummaryNode () {
   if (xmindStructure === 'zzjgt') return
   select('.thumb-mind-map-nodebox')
     .selectAll('.thumb-x-mind-nodetheme')
-    .filter(node => node.data.summary)
+    .filter(node => node.data.targetSummarys?.length)
     .each(node => {
+      const targetSummarys = node.data.targetSummarys
       const dir = node.direction === 'right'
-      const {
-        minX,
-        maxX,
-        minY,
-        maxY
-      } = getXmindSummaryPos(node)
-      const startX = dir ? maxX : minX
+      const { minX, minY } = getXmindSummaryPos(node)
       const unit = dir ? 1 : '-1'
-      const controlPos = { x: startX + 12 * unit, y: (maxY + minY) / 2 }
-      summaryContainer
-        .append('g')
-        .attr('id', `thumb-summary-path-${node.data._id}`)
-        .append('path')
-        .attr('stroke-width', 2)
-        .attr('stroke', xmindTheme.summaryLineColor)
-        .attr('d', `M${startX}, ${minY} Q${startX + 10 * unit}, ${minY} ${controlPos.x}, ${controlPos.y} Q${startX + 10 * unit}, ${maxY} ${startX}, ${maxY}`)
-        .attr('fill', 'none')
-        .attr('stroke-linecap', 'round')
-      select(`#thumb-summary-path-${node.data._id}`)
-        .append('path')
-        .attr('d', `M${controlPos.x}, ${controlPos.y} L${controlPos.x + 10 * unit}, ${controlPos.y}`)
-        .attr('stroke-width', 2)
-        .attr('stroke', xmindTheme.summaryLineColor)
-      select(`#thumb-summary-path-${node.data._id}`)
-        .append('g')
-        .datum({ parentId: node.data._id })
-        .attr('fill', 'transparent')
-        .append('rect')
-        .attr('x', controlPos.x + 16 * unit - (dir ? 0 : node.summaryWidth))
-        .attr('y', controlPos.y - node.summaryHeight / 2)
-        .attr('width', node.summaryWidth)
-        .attr('height', node.summaryHeight)
-        .attr('rx', 4)
-        .attr('ry', 4)
-        .attr('stroke', xmindTheme.summaryLineColor)
-        .attr('stroke-width', '2')
-        .attr('fill', 'none')
-      select(`#thumb-summary-path-${node.data._id}`)
-        .select('g')
-        .append('text')
-        .attr('x', controlPos.x + (16 + 10) * unit - (dir ? 0 : node.summaryWidth - 10 - 10))
-        .attr('y', controlPos.y - node.summaryHeight / 2 + 6)
-        .attr('dominant-baseline', 'text-before-edge')
-        .text(node.data.summary)
-        .attr('fill', xmindTheme.summaryTextColor)
-        .attr('font-weight', 'bold')
-        .attr('font-size', 12)
-      select(`#thumb-summary-path-${node.data._id}`)
-        .select('g')
-        .append('rect')
-        .attr('class', 'high-border')
-        .attr('x', controlPos.x + 13 * unit - (dir ? 0 : node.summaryWidth + 6))
-        .attr('y', controlPos.y - node.summaryHeight / 2 - 3)
-        .attr('width', node.summaryWidth + 6)
-        .attr('height', node.summaryHeight + 6)
-        .attr('rx', 4)
-        .attr('ry', 4)
-        .attr('stroke', 'none')
-        .attr('stroke-width', '2')
-        .attr('fill', 'transparent')
+      for (let i = 0; i < targetSummarys.length; i++) {
+        const targetId = targetSummarys[i].id
+        const targetNode = select(`#${targetId}`)
+        const brothers = targetNode.datum().parent?.children || []
+        const startIdx = brothers.findIndex(o => o.data._id === node.data._id)
+        const endIdx = brothers.findIndex(o => o.data._id === targetId)
+        let maxX = 0
+        const [upArea, downArea] = [[], []]
+        downArea[1] = getXmindSummaryPos(brothers[brothers.length - 1]).maxY + 8
+        upArea[0] = getXmindSummaryPos(brothers[0]).minY - 8
+        for (let i = startIdx; i <= endIdx; i++) {
+          const limitRect = getXmindSummaryPos(brothers[i])
+          if (i === startIdx) {
+            downArea[0] = limitRect.maxY + 8
+          }
+          if (i === endIdx) {
+            upArea[1] = limitRect.minY - 8
+          }
+          maxX = Math.max(maxX, limitRect.maxX)
+        }
+        const { maxY } = getXmindSummaryPos(targetNode.datum())
+        const startX = dir ? maxX : minX
+        const controlPos = { x: startX + 12 * unit, y: (maxY + minY) / 2 }
+        summaryContainer
+          .append('g')
+          .append('path')
+          .attr('stroke-width', 2)
+          .attr('stroke', xmindTheme.summaryLineColor)
+          .attr('d', `M${startX}, ${minY} Q${startX + 10 * unit}, ${minY} ${controlPos.x}, ${controlPos.y} Q${startX + 10 * unit}, ${maxY} ${startX}, ${maxY}`)
+          .attr('fill', 'none')
+          .attr('stroke-linecap', 'buut')
+          .each(function () {
+            select(this.parentNode)
+              .append('path')
+              .attr('d', `M${controlPos.x}, ${controlPos.y} L${controlPos.x + 10 * unit}, ${controlPos.y}`)
+              .attr('stroke-width', 2)
+              .attr('stroke', xmindTheme.summaryLineColor)
+              .each(function () {
+                select(this.parentNode)
+                  .append('g')
+                  .attr('fill', 'transparent')
+                  .append('rect')
+                  .attr('class', 'rect-border')
+                  .attr('x', controlPos.x + 16 * unit - (dir ? 0 : targetSummarys[i].summaryWidth))
+                  .attr('y', controlPos.y - targetSummarys[i].summaryHeight / 2)
+                  .attr('width', targetSummarys[i].summaryWidth)
+                  .attr('height', targetSummarys[i].summaryHeight)
+                  .attr('rx', 4)
+                  .attr('ry', 4)
+                  .attr('stroke', xmindTheme.summaryLineColor)
+                  .attr('stroke-width', '2')
+                  .attr('fill', 'none')
+                  .each(function () {
+                    select(this.parentNode)
+                      .append('text')
+                      .attr('x', controlPos.x + (16 + 10) * unit - (dir ? 0 : targetSummarys[i].summaryWidth - 10 - 10))
+                      .attr('y', controlPos.y - targetSummarys[i].summaryHeight / 2 + 6)
+                      .attr('dominant-baseline', 'text-before-edge')
+                      .text(targetSummarys[i].text)
+                      .attr('fill', xmindTheme.summaryTextColor)
+                      .attr('font-weight', 'bold')
+                      .attr('font-size', 12)
+                      .each(function () {
+                        select(this.parentNode)
+                          .append('rect')
+                          .attr('class', 'high-border')
+                          .attr('x', controlPos.x + 13 * unit - (dir ? 0 : targetSummarys[i].summaryWidth + 6))
+                          .attr('y', controlPos.y - targetSummarys[i].summaryHeight / 2 - 3)
+                          .attr('width', targetSummarys[i].summaryWidth + 6)
+                          .attr('height', targetSummarys[i].summaryHeight + 6)
+                          .attr('rx', 4)
+                          .attr('ry', 4)
+                          .attr('stroke', 'none')
+                          .attr('stroke-width', '2')
+                          .attr('fill', 'transparent')
+                      })
+                  })
+              })
+          })
+      }
     })
 }
 

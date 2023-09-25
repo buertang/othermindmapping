@@ -1087,14 +1087,8 @@ export default defineComponent({
             return `${select(this).node().getTotalLength()} 0`
           })
         const ids = combinationId.split('-')
-        const [sourceId, targetId] = [ids[0], ids[1]]
-        const sourceNode = select(`#${sourceId}`).datum()
-        const targetNode = select(`#${targetId}`).datum()
-        const { minX, minY } = getXmindSummaryPos(sourceNode)
-        const { maxX, maxY } = getXmindSummaryPos(targetNode)
-        const dir = sourceNode.direction === 'right'
-        const [width, height] = [maxX - minX + 2, maxY - minY + 16]
-        const [x, y] = [minX + (dir ? -8 : 4), minY - 8]
+        const sourceId = ids[0]
+        const { x, y, width, height, upArea, downArea } = select(`#summary-path-${combinationId} > g`).datum()
         select(`#summary-path-${combinationId}`)
           .select('g')
           .append('rect')
@@ -1136,14 +1130,10 @@ export default defineComponent({
             event.stopPropagation()
             summaryControllerName.value = select(this).attr('class')
             const sourcedata = select(`#${sourceId}`).datum()
-            const selectSummaryNode = select('.select-target-summary')
-            const initMinY = Number(selectSummaryNode.attr('y'))
-            const initMaxY = initMinY + Number(selectSummaryNode.attr('height'))
-            const { minY, maxY } = getXmindSummaryPos(sourcedata.parent)
             summaryBrothers = sourcedata.parent.children
             summaryArea = {
-              upArea: [minY - 8, initMinY],
-              downArea: [initMaxY, maxY + 8]
+              upArea,
+              downArea
             }
           })
       }
@@ -1627,6 +1617,10 @@ export default defineComponent({
         const targetSummarys = target.targetSummarys
         if (cacheIds[cacheIds.length - 1] !== combinationIds[1]) {
           const summary = targetSummarys.find(o => o.id === combinationIds[1])
+          const hasExist = targetSummarys.findIndex(o => o.id === cacheIds[cacheIds.length - 1])
+          if (hasExist > -1) {
+            targetSummarys.splice(hasExist, 1)
+          }
           summary.id = cacheIds[cacheIds.length - 1]
         }
       } else {
