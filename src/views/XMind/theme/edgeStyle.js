@@ -2,12 +2,16 @@ function getRootLinePath (gradient, lineWidth, { sx, sy }, { tx, ty }) {
   const gap = Math.abs(ty - sy) < 50 ? 20 : 0
   const unitX = tx > sx ? 1 : -1
   const unitY = ty > sy ? -1 : ty < sy ? 1 : 0
+  const offsetY = Math.abs(ty - sy)
+  const offsetX = Math.abs(tx - sx)
+  if (offsetY < offsetX) {
+    sx += Math[unitX > 0 ? 'min' : 'max'](unitX * (offsetX - offsetY), unitX * 30)
+  }
   if (gradient) {
     lineWidth = Number(lineWidth.split('-')[1])
     return `M${sx} ${sy} Q${sx + gap * unitX} ${ty} ${tx} ${ty} Q${sx} ${ty} ${sx - (5 + lineWidth)} ${sy} z`
   }
-
-  return `M${sx} ${sy} Q${sx + 10 * unitX} ${ty + 10 * unitY} ${tx} ${ty}`
+  return `M${sx} ${sy} Q${sx + offsetX / 12 * unitX} ${ty + offsetY / 12 * unitY} ${tx} ${ty}`
 }
 
 export default {
