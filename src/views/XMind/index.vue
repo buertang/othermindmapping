@@ -134,7 +134,7 @@ import { zoom as d3Zoom, zoomIdentity } from 'd3-zoom'
 import { preventWindowDefault, shortcutKeydown } from './shortcutKey'
 import { ref, defineComponent, onMounted, nextTick, computed, onBeforeUnmount, watch } from 'vue'
 import { getLinearExpression, getMinDistancePoint, getRectLineIntersectionPoint, collideRect, isRectangleInside } from './utils/math'
-import { randomId, dataTreeLayoutPackage, getXmindSummaryPos, getNodeRelationPathPoints, setuniqueId } from './utils/node'
+import { randomId, dataTreeLayoutPackage, getNodeRelationPathPoints, setuniqueId } from './utils/node'
 import {
   debounce,
   insertXmindNode,
@@ -435,6 +435,7 @@ export default defineComponent({
      * 画布局中
      */
     function setXMindMapCenter (transform) {
+      if (select('.x-mind-root-theme').empty()) return
       const zoom = structureZoom()
       const { width, height } = select('.x-mind-root-theme').node().getBoundingClientRect()
       nextTick(() => {
@@ -540,6 +541,7 @@ export default defineComponent({
           edges
         }
       } catch (error) {
+        console.error(error)
         uploadImageVisible.value = false
         message.error('json文件格式不符合，请参照格式模板上传')
       }
@@ -547,7 +549,7 @@ export default defineComponent({
 
     function initRnderCanvas () {
       createCanvasContainer(mindContainer)
-      const { nodes, edges } = getNodeEdgesData()
+      const { nodes = [], edges = [] } = getNodeEdgesData() || {}
       const relationNodes = nodes.filter(node => node.data.relations?.length)
       renderNewNodes(nodes, theme[currentTheme.value], currentStructure.value)
       renderNewEdges(edges)
@@ -565,7 +567,7 @@ export default defineComponent({
      * @param { Boolean } appendHistory 更新画布的时候是否需要把当前数据存入历史数据中
      */
     function updateXmindCanvas (clearable = true, appendHistory = true) {
-      const { nodes, edges } = getNodeEdgesData()
+      const { nodes = [], edges = [] } = getNodeEdgesData() || {}
       const relationNodes = nodes.filter(node => node.data.relations?.length)
       renderNewNodes(nodes, theme[currentTheme.value], currentStructure.value)
       renderUpdateNodes(nodes)

@@ -81,6 +81,7 @@ export default defineComponent({
         .attr('transform', `scale(${scalceRadio.value})`)
       initThumbRnderCanvas()
       nextTick(() => {
+        if (select('.thumb-x-mind-root-theme').empty()) return
         const { width, height } = select('.thumb-x-mind-root-theme').node().getBoundingClientRect()
         mindContainer
           .attr('transform', `translate(${(canvasWidth - width) / 2}, ${(canvasHeight - height) / 2}) scale(${scalceRadio.value})`)

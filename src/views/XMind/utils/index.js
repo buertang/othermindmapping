@@ -1,4 +1,4 @@
-import { randomId, hasChild, setuniqueId } from './node'
+import { randomId, hasChild } from './node'
 
 export function isEmpty (data) {
   if (
@@ -249,13 +249,55 @@ export function splitLeftRightRoot (root, structure) {
   const [leftRoot, rightRoot] = [{ ...root, children: [] }, { ...root, children: [] }]
   if (hasChild(root)) {
     const len = root.children.length
-    rightRoot.children.push(...root.children.slice(0, Math.ceil(len / 2)))
-    leftRoot.children.push(...root.children.slice(Math.ceil(len / 2)))
+    const cacheNodes = setRightLeftNodes(root.children)
+    for (let i = 0; i < cacheNodes.length; i++) {
+      if (rightRoot.children.length < Math.floor(len / 2)) {
+        rightRoot.children.push(...cacheNodes[i])
+      } else {
+        leftRoot.children.push(...cacheNodes[i])
+      }
+    }
   }
   return {
     leftRoot,
     rightRoot
   }
+}
+
+/**
+ * 在两个节点之间有概要关系时，思维导图结构下把有关联的节点放在同一侧
+ * @param {*} nodes
+ * @returns
+ */
+function setRightLeftNodes (nodes) {
+  const cacheNodes = []
+  for (let i = 0; i < nodes.length; i++) {
+    const targetSummarys = nodes[i].targetSummarys
+    // 节点不存在概要关系
+    if (!targetSummarys?.length) {
+      cacheNodes.push([nodes[i]])
+      continue
+    }
+    const cache = [nodes[i]]
+    _c(cache, targetSummarys, i)
+    cacheNodes.push(cache)
+  }
+
+  function _c (cache, targetSummarys, i) {
+    const maxIdx = Math.max(...targetSummarys.map(o => nodes.findIndex(kk => kk._id === o.id)))
+    if (maxIdx > i) {
+      const len = maxIdx - i
+      const betweenNodes = nodes.splice(i + 1, len)
+      cache.push(...betweenNodes)
+      for (let k = 0; k < betweenNodes.length; k++) {
+        if (betweenNodes[k].targetSummarys?.length) {
+          _c(cache, betweenNodes[k].targetSummarys, i)
+        }
+      }
+      i -= len
+    }
+  }
+  return cacheNodes
 }
 
 /**
