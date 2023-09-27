@@ -147,6 +147,7 @@ import {
   expandAllNodes,
   toogleExpandXmindNode,
   recursiveTreeValue,
+  updateNodeCustomStyle,
   batchRecursiveTreeValue,
   storageRootRelaTime,
   createNodeIntance,
@@ -336,12 +337,12 @@ export default defineComponent({
           .datum()
       })
       const debounceUpdateStyle = debounce((filedName, filedValue) => {
-        recursiveTreeValue(root, currnentNode.value.data._id, filedName, filedValue)
+        updateNodeCustomStyle(root, currnentNode.value.data._id, filedName, filedValue)
         updateXmindCanvas(false)
       }, 300)
       mitter.on('update-subject-style', function ({ filedName, filedValue }) {
         if (!debounceUpdateFileds.includes(filedName)) {
-          recursiveTreeValue(root, currnentNode.value.data._id, filedName, filedValue)
+          updateNodeCustomStyle(root, currnentNode.value.data._id, filedName, filedValue)
           updateXmindCanvas(false)
         } else {
           updateRedrawNodeStyle({ filedValue, filedName, id: currnentNode.value.data._id })
@@ -1365,13 +1366,13 @@ export default defineComponent({
 
     function resetSubjectStyle (isGloab) {
       if (isGloab) {
-        resetRootNodeStyleFiled(root, COULDRESETFILEDS, true)
+        resetRootNodeStyleFiled(root, true)
         updateXmindCanvas()
         return
       }
       const data = getTargetDataById(root, currnentNode.value?.data._id)
       if (data) {
-        resetRootNodeStyleFiled(data, COULDRESETFILEDS, false)
+        resetRootNodeStyleFiled(data, false)
         updateXmindCanvas()
       }
     }

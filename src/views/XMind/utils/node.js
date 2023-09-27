@@ -53,6 +53,9 @@ function dataTreeLayoutPackage (root, theme, direction) {
   firstWalk(nodes, direction, theme)
   secondWalk(nodes, direction, theme)
   thirdWalk(nodes, direction, theme)
+  if (theme !== 'simplicity' || direction === 'bottom') {
+    setParentNodeCenter(nodes[0], direction)
+  }
   links = hierarchydata.links()
   return {
     nodes,
@@ -62,7 +65,7 @@ function dataTreeLayoutPackage (root, theme, direction) {
 
 /**
  * 递归计算节点长度和高度
- * @param {*} root
+ * @param {*} nodes
  */
 function calcNodeSize (nodes) {
   nodes.forEach(node => {
@@ -116,7 +119,7 @@ function calcNodeSize (nodes) {
     if (node.data.targetSummarys?.length) {
       const summarys = node.data.targetSummarys
       for (let i = 0; i < summarys.length; i++) {
-        const { width, height } = createTextNode(summarys[i].text, 12, 'bold')
+        const { width, height } = createTextNode(summarys[i].text, 12, 'bold', "微软雅黑, 'Microsoft YaHei'")
         summarys[i].summaryWidth = width + 20
         summarys[i].summaryHeight = height + 12
       }
@@ -159,7 +162,7 @@ function getTextNodeRect (options) {
     text,
     fontSize,
     fontWeight = 'normal',
-    fontFamily = "微软雅黑, 'Microsoft YaHei'",
+    fontFamily = "黑体, SimHei, 'Heiti SC'",
     fontStyle = 'normal'
   } = options
   const textSpan = document.createElement('p')
@@ -207,15 +210,16 @@ function setNodesStyle (nodes, themeType, direction) {
     node.style = (theme[themeType][node.depth] || theme[themeType].normal).getStyle()
     if (node.depth > 0 && themeType !== 'simplicity') {
       const colors = node.style.colors
+      const textColors = node.style.textColors || []
       const colorLen = colors.length
       const positionIdx = (direction === 'left' ? len + node.currentIdx : node.currentIdx) % colorLen
       node.style.lineStyle.fill = colors[positionIdx]
       if (node.depth === 1) {
         node.style.fill = colors[positionIdx]
+        node.style.textStyle.color = textColors[positionIdx]
       }
       if (node.depth > 1) {
-        node.style.fill = colors[positionIdx] + '15'
-        node.style.textStyle.color = colors[positionIdx]
+        node.style.fill = colors[positionIdx] + '18'
       }
     }
     const {
@@ -237,7 +241,7 @@ function setNodesStyle (nodes, themeType, direction) {
       horizontalInner,
       horizontalOutter,
       tiezhiSize
-    } = node.data
+    } = node.data.customStyle || {}
     if (!isEmpty(fontFamily)) {
       node.style.textStyle.fontFamily = fontFamily
     }
@@ -479,6 +483,48 @@ function updateChildren (children, prop, offset) {
       updateChildren(item.children, prop, offset)
     }
   })
+}
+
+/**
+ * 父节点的位置相对于子节点居中显示
+ * @param {*} node
+ */
+function setParentNodeCenter (node, direction) {
+  function _c (node, direction) {
+    const pos = direction === 'bottom' ? 'x' : 'y'
+    const sizeName = direction === 'bottom' ? 'width' : 'height'
+    const children = node.children || []
+    if (children.length) {
+      const firstChild = children[0]
+      const lastChild = children[children.length - 1]
+      const area = firstChild[pos] + firstChild[sizeName] / 2 + lastChild[pos] + lastChild[sizeName] / 2
+      const parentCenter = area / 2
+      if (node[pos] + node[sizeName] / 2 !== parentCenter) {
+        node[pos] = parentCenter - node[sizeName] / 2
+        if (node.parent) {
+          _c(node.parent, direction)
+        }
+      }
+    }
+    for (let i = 0; i < children.length; i++) {
+      _c(children[i], direction)
+    }
+  }
+  _c(node, direction)
+
+  // 当结构为思维导图的时候，左右两颗树的根节点位置需要统一调整，同时递归调整子节点
+  const offsetX = node.x
+  const offsetY = node.y
+  function _t (node) {
+    node.x -= offsetX
+    node.y -= offsetY
+    if (hasChild(node)) {
+      for (let i = 0; i < node.children.length; i++) {
+        _t(node.children[i])
+      }
+    }
+  }
+  _t(node)
 }
 
 /**

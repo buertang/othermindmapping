@@ -159,7 +159,7 @@ export default defineComponent({
         const c = props.currentSubject.style
         const { lineStyle, margin, textStyle } = c
         return {
-          fontFamily: textStyle.fontFamily || '微软雅黑',
+          fontFamily: textStyle.fontFamily || "黑体, SimHei, 'Heiti SC'",
           fontSize: textStyle.fontSize,
           fontWeight: textStyle.fontWeight || 'normal',
           fontStyle: textStyle.fontStyle || 'normal',

@@ -44,6 +44,7 @@ export default {
       getStyle: function () {
         return {
           colors: ['#F9423A', '#F6A04D', '#F3D321', '#00BC7B', '#486AFF', '#4D49BE'],
+          textColors: ['#fff', '#000', '#000', '#000', '#fff', '#fff'],
           rx: 4,
           ry: 4,
           stroke: 'rgba(0,0,0,0)',
@@ -81,7 +82,7 @@ export default {
           stroke: 'rgba(0,0,0,0)',
           strokeWidth: 0,
           textStyle: {
-            color: '#4c4c4c',
+            color: '#620703',
             fontSize: 14
           },
           lineStyle: {
@@ -265,6 +266,7 @@ export default {
       getStyle: function () {
         return {
           colors: ['#00868B', '#008B8B', '#528B8B'],
+          textColors: ['#fff', '#000', '#fff'],
           rx: 4,
           ry: 4,
           stroke: 'rgba(0,0,0,0)',
@@ -376,6 +378,7 @@ export default {
       getStyle: function () {
         return {
           colors: ['#9932CC', '#8A2BE2'],
+          textColors: ['#fff', '#000'],
           rx: 4,
           ry: 4,
           stroke: 'rgba(0,0,0,0)',

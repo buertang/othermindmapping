@@ -67,7 +67,7 @@ export function batchInsertXmindNode (nodes, ids, type) {
 export function batchReferenceStyle (node, ids, style) {
   const idx = ids.findIndex(id => id === node._id)
   if (idx > -1) {
-    Object.assign(node, style)
+    node.customStyle = { ...node.customStyle || {}, ...style }
     ids.splice(idx, 1)
     if (ids.length === 0) return
   }
@@ -325,18 +325,39 @@ export function recursiveTreeValue (node, id, key, value) {
 }
 
 /**
+ * 递归寻找指定节点并且更新指定节点的样式
+ * @param {*} node
+ * @param {*} id
+ * @param {*} key
+ * @param {*} value
+ */
+export function updateNodeCustomStyle (node, id, key, value) {
+  if (node._id === id) {
+    if (node.customStyle) {
+      node.customStyle[key] = value
+    } else {
+      node.customStyle = {}
+      node.customStyle[key] = value
+    }
+    return
+  }
+  if (hasChild(node)) {
+    node.children.forEach(n => {
+      updateNodeCustomStyle(n, id, key, value)
+    })
+  }
+}
+
+/**
  * 重置节点主题样式，清空指定样式值
  * @param {*} root
- * @param {*} fileds
  * @param {*} deep
  */
-export function resetRootNodeStyleFiled (root, fileds, deep) {
-  for (let i = 0; i < fileds.length; i++) {
-    root[fileds[i]] = null
-  }
+export function resetRootNodeStyleFiled (root, deep) {
+  root.customStyle = undefined
   if (hasChild(root) && deep) {
     for (let k = 0; k < root.children.length; k++) {
-      resetRootNodeStyleFiled(root.children[k], fileds, deep)
+      resetRootNodeStyleFiled(root.children[k], deep)
     }
   }
 }
@@ -530,7 +551,7 @@ export function getNodeCustomStyle (node) {
     horizontalInner,
     horizontalOutter,
     tiezhiSize
-  } = node
+  } = node.customStyle || {}
   return {
     fontFamily,
     fontSize,
