@@ -828,6 +828,7 @@ export default defineComponent({
           break
         case 'copy-style':
           copyStyle.value = getNodeCustomStyle(currnentNode.value.data)
+          console.log(currnentNode.value)
           hiddenPopover()
           break
         case 'reference-style':
@@ -838,7 +839,6 @@ export default defineComponent({
           }
           updateXmindCanvas()
           hiddenPopover()
-          copyStyle.value = null
           break
         case 'cut':
           isPastState.value = false
@@ -1181,7 +1181,7 @@ export default defineComponent({
       if (readOnly.value) return
       const combinationId = select(_this).datum().parentId
       editorTypeName.value = 'summary'
-      editorNodeValue.value = select(`#summary-path-${combinationId} > g > text`).text()
+      editorNodeValue.value = select(`#summary-path-${combinationId} .node-summary-description`).text()
       editorVisible.value = true
     }
 
@@ -2139,7 +2139,7 @@ export default defineComponent({
   animation: relation-path-move 10s infinite linear;
 }
 
-.node-text-description {
+.node-summary-description, .node-text-description {
   word-break: break-all;
   white-space: pre-wrap;
   line-height: inherit;
@@ -2147,6 +2147,11 @@ export default defineComponent({
   margin: 0;
   max-width: 300px;
   line-break: anywhere;
+  &.node-summary-description {
+    max-width: 420px;
+    font-size: 12px;
+    font-weight: bold;
+  }
 }
 
 @keyframes relation-path-move {

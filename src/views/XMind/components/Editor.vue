@@ -101,11 +101,9 @@ export default defineComponent({
             padding: '8px'
           },
           c2: {
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-all',
-            minWidth: 'auto',
             marginTop: 0,
-            lineBreak: 'anywhere'
+            minWidth: 'auto',
+            maxWidth: 'auto'
           }
         }
       }
@@ -136,7 +134,7 @@ export default defineComponent({
   background: #fff;
   box-shadow: 0px 0px 18px 5px rgba(0,0,0,0.1);
   border-radius: 2px;
-  height: 42px;
+  min-height: 42px;
   line-height: 42px;
   padding: 0 12px;
   &.custom-position {
@@ -148,8 +146,12 @@ export default defineComponent({
     font-size: 14px;
     outline: none;
     min-width: 360px;
+    max-width: 420px;
     display: inline-block;
     margin-top: 12px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-break: anywhere;
     &:empty:before{
       color: 999;
       font-size: 12px;

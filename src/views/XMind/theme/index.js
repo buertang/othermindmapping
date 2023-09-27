@@ -13,16 +13,16 @@ export default {
         return {
           rx: 4,
           ry: 4,
-          fill: '#FF0000',
-          stroke: '#FF0000',
+          fill: '#092933',
+          stroke: '#092933',
           strokeWidth: 0,
           textStyle: {
             color: '#fff',
-            fontSize: 20,
-            fontWeight: 'bold'
+            fontSize: 18,
+            fontWeight: 'normal'
           },
           lineStyle: {
-            fill: '#FF0000',
+            fill: '#092933',
             lineWidth: 2
           },
           margin: {
@@ -240,8 +240,8 @@ export default {
           strokeWidth: 0,
           textStyle: {
             color: '#fff',
-            fontSize: 20,
-            fontWeight: 'bold'
+            fontSize: 18,
+            fontWeight: 'normal'
           },
           lineStyle: {
             fill: '#008B8B',
@@ -266,7 +266,7 @@ export default {
       getStyle: function () {
         return {
           colors: ['#00868B', '#008B8B', '#528B8B'],
-          textColors: ['#fff', '#000', '#fff'],
+          textColors: ['#fff', '#fff', '#fff'],
           rx: 4,
           ry: 4,
           stroke: 'rgba(0,0,0,0)',
@@ -352,8 +352,8 @@ export default {
           strokeWidth: 0,
           textStyle: {
             color: '#fff',
-            fontSize: 20,
-            fontWeight: 'bold'
+            fontSize: 18,
+            fontWeight: 'normal'
           },
           lineStyle: {
             fill: '#9400D3',
@@ -378,7 +378,7 @@ export default {
       getStyle: function () {
         return {
           colors: ['#9932CC', '#8A2BE2'],
-          textColors: ['#fff', '#000'],
+          textColors: ['#fff', '#fff'],
           rx: 4,
           ry: 4,
           stroke: 'rgba(0,0,0,0)',

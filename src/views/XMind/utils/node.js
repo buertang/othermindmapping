@@ -119,7 +119,14 @@ function calcNodeSize (nodes) {
     if (node.data.targetSummarys?.length) {
       const summarys = node.data.targetSummarys
       for (let i = 0; i < summarys.length; i++) {
-        const { width, height } = createTextNode(summarys[i].text, 12, 'bold', "微软雅黑, 'Microsoft YaHei'")
+        // const { width, height } = createTextNode(summarys[i].text, 12, 'bold', "微软雅黑, 'Microsoft YaHei'")
+        const { width, height } = getTextNodeRect({
+          text: summarys[i].text,
+          fontSize: 12,
+          fontWeight: 'bold',
+          fontFamily: "微软雅黑, 'Microsoft YaHei'",
+          maxWidth: '420px'
+        })
         summarys[i].summaryWidth = width + 20
         summarys[i].summaryHeight = height + 12
       }
@@ -163,11 +170,12 @@ function getTextNodeRect (options) {
     fontSize,
     fontWeight = 'normal',
     fontFamily = "黑体, SimHei, 'Heiti SC'",
-    fontStyle = 'normal'
+    fontStyle = 'normal',
+    maxWidth = '300px'
   } = options
   const textSpan = document.createElement('p')
   const spanStyle = {
-    maxWidth: '300px',
+    maxWidth,
     fontSize: fontSize + 'px',
     fontWeight,
     fontFamily,

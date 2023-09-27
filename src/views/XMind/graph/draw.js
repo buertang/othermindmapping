@@ -855,6 +855,7 @@ export function renderNewSummaryNode (id) {
       const targetSummarys = node.data.targetSummarys
       const dir = node.direction === 'right'
       const minY = getXmindSummaryPos(node).minY
+      console.log(getXmindSummaryPos(node))
       const unit = dir ? 1 : '-1'
       for (let i = 0; i < targetSummarys.length; i++) {
         const targetId = targetSummarys[i].id
@@ -925,16 +926,17 @@ export function renderNewSummaryNode (id) {
                   .attr('fill', 'none')
                   .each(function () {
                     select(this.parentNode)
-                      .append('text')
+                      .append('foreignObject')
                       .attr('x', controlPos.x + (16 + 10) * unit - (dir ? 0 : targetSummarys[i].summaryWidth - 10 - 10))
                       .attr('y', controlPos.y - targetSummarys[i].summaryHeight / 2 + 6)
-                      .attr('dominant-baseline', 'text-before-edge')
+                      .attr('width', targetSummarys[i].summaryWidth)
+                      .attr('height', targetSummarys[i].summaryHeight)
+                      .append('xhtml:p')
+                      .attr('class', 'node-summary-description')
                       .text(targetSummarys[i].text)
-                      .attr('fill', xmindTheme.summaryTextColor)
-                      .attr('font-weight', 'bold')
-                      .attr('font-size', 12)
+                      .style('color', xmindTheme.summaryTextColor)
                       .each(function () {
-                        select(this.parentNode)
+                        select(this.parentNode.parentNode)
                           .append('rect')
                           .attr('class', 'high-border')
                           .attr('x', controlPos.x + 13 * unit - (dir ? 0 : targetSummarys[i].summaryWidth + 6))

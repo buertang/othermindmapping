@@ -41,7 +41,6 @@
           v-for="item in themes"
           :key="item.theme">
           <img :src="item.img" alt="theme">
-          <p>{{ item.name }}</p>
         </div>
       </div>
       <div class="structure-modal" v-show="currentId === 'jiegou'">
@@ -52,7 +51,6 @@
           v-for="item in structures"
           :key="item.structure">
           <img :src="item.img" alt="structure">
-          <p>{{ item.name }}</p>
         </div>
       </div>
       <div class="shortcut-modal" v-show="currentId === 'kuaijiejian'">
@@ -117,10 +115,10 @@ export default defineComponent({
     ]
 
     const structures = [
-      { name: '逻辑结构图', structure: 'ljjgt', img: require('@/assets/images/xmind/ljjgt.png') },
-      { name: '思维导图', structure: 'swdt', img: require('@/assets/images/xmind/swdt.png') },
-      { name: '组织架构图', structure: 'zzjgt', img: require('@/assets/images/xmind/zzjgt.png') },
-      { name: '括号图', structure: 'kht', img: require('@/assets/images/xmind/kht.png') }
+      { name: '逻辑结构图', structure: 'ljjgt', img: require('@/assets/images/xmind/ljjgt.svg') },
+      { name: '思维导图', structure: 'swdt', img: require('@/assets/images/xmind/swdt.svg') },
+      { name: '组织架构图', structure: 'zzjgt', img: require('@/assets/images/xmind/zzjgt.svg') },
+      { name: '括号图', structure: 'kht', img: require('@/assets/images/xmind/kht.svg') }
     ]
 
     const shortcuts = [
@@ -300,7 +298,7 @@ export default defineComponent({
         transition: .2s;
         overflow: hidden;
         border: 2px solid transparent;
-        padding-top: 12px;
+        border-radius: 4px;
         &:hover {
           box-shadow: 0px 0px 18px 5px rgba(0,0,0,0.1);
         }
@@ -310,14 +308,15 @@ export default defineComponent({
         }
         img {
           display: block;
-          width: 80%;
+          width: 100%;
           margin: 0 auto;
         }
-        p {
-          text-align: center;
-          color: #000;
-          font-size: 12px;
-          line-height: 38px;
+        &.structure-modal {
+         &-item {
+          img {
+            width: 80%;
+          }
+         }
         }
       }
     }
