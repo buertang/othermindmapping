@@ -115,21 +115,19 @@ export default defineComponent({
     }
 
     function moveViewportBox () {
-      let [w, h, l, t] = [0, 0, 0, 0]
       select('.thumb-xmind-viewport')
-        .on('mousedown', () => {
-          const { width, height, left, top } = document.querySelector('#thumb-zx-xmind-map-svg').getBoundingClientRect()
-          w = width
-          h = height
-          l = left
-          t = top
+        .on('mouseenter', () => {
+          couldDragState.value = false
+        })
+        .on('mouseleave', () => {
+          couldDragState.value = false
+        })
+        .on('mousedown', (event) => {
+          event.stopPropagation()
           couldDragState.value = true
         })
         .on('mousemove', event => {
           if (couldDragState.value) {
-            if (event.x - 5 <= l || event.x + 5 >= l + w || event.y - 5 <= t || event.y + 5 >= t + h) {
-              couldDragState.value = false
-            }
             context.emit('move-map', {
               x: event.movementX,
               y: event.movementY
