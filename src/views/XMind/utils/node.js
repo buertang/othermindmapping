@@ -119,7 +119,6 @@ function calcNodeSize (nodes) {
     if (node.data.targetSummarys?.length) {
       const summarys = node.data.targetSummarys
       for (let i = 0; i < summarys.length; i++) {
-        // const { width, height } = createTextNode(summarys[i].text, 12, 'bold', "微软雅黑, 'Microsoft YaHei'")
         const { width, height } = getTextNodeRect({
           text: summarys[i].text,
           fontSize: 12,

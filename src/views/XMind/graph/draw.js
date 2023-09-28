@@ -350,6 +350,9 @@ export function renderXmindPImageNodes () {
     .attr('width', d => d.data.imageInfo.width)
     .attr('height', d => d.data.imageInfo.height)
     .attr('xlink:href', d => d.data.imageInfo.url)
+    .on('click', function (event) {
+      mitter.emit('image-handler-click', { event, _this: this })
+    })
 }
 
 export function renderXmindTiezhiNodes () {
@@ -855,13 +858,13 @@ export function renderNewSummaryNode (id) {
       const targetSummarys = node.data.targetSummarys
       const dir = node.direction === 'right'
       const minY = getXmindSummaryPos(node).minY
-      console.log(getXmindSummaryPos(node))
       const unit = dir ? 1 : '-1'
       for (let i = 0; i < targetSummarys.length; i++) {
         const targetId = targetSummarys[i].id
         const targetNode = select(`#${targetId}`)
         if (targetNode.empty()) continue
-        const brothers = targetNode.datum().parent?.children || []
+        if (targetNode.datum().parent.data._id !== node.parent.data._id) continue
+        const brothers = targetNode.datum().parent?.children
         const startIdx = brothers.findIndex(o => o.data._id === node.data._id)
         const endIdx = brothers.findIndex(o => o.data._id === targetId)
         let [minX, maxX] = [Infinity, -Infinity]
@@ -1320,6 +1323,35 @@ export function createCustomXMindDEFS () {
         .attr('stop-color', '#1890FF')
         .attr('stop-opacity', 0)
     })
+}
+
+/**
+ * 图片拖动放大缩小控制点绘制
+ * @param {*} mindOutterG
+ */
+export function drawImageControlNode (mindOutterG) {
+  const controllers = ['top-left', 'top-right', 'bottom-right', 'bottom-left']
+  mindOutterG
+    .append('g')
+    .style('display', 'none')
+    .attr('class', 'element-drag-controller')
+    .on('click', event => event.stopPropagation())
+    .on('mousedown', event => event.stopPropagation())
+    .selectAll('point')
+    .data(controllers)
+    .enter()
+    .append('rect')
+    .attr('class', d => `${d}-point control-point`)
+    .attr('width', 8)
+    .attr('height', 8)
+    .attr('stroke', 'rgb(41,183,250)')
+    .attr('stroke-width', 2)
+    .attr('fill', '#fff')
+  select('.element-drag-controller')
+    .insert('path', 'rect')
+    .attr('stroke', 'rgb(41,183,250)')
+    .attr('stroke-width', 2)
+    .attr('fill', 'transparent')
 }
 
 export function updateCustomMarkerColor () {

@@ -4,7 +4,7 @@
       id="zx-xmind-map"
       :class="{ 'xmind-readonly': readOnly, 'xmind-relationing': drawRelationIng }"
       :style="{ 'background-color': backgroundColor }"
-      @click="hiddenPopover();removeNodeHighLight();removeSummaryNodeHighLight();removeRelationNodeHighLight()"></div>
+      @click="outXmindClick"></div>
 
     <transition name="editor-fade-in">
       <Editor
@@ -128,7 +128,6 @@ import theme from './theme'
 import mitter from './mitt'
 import { xmindMap } from '@/store'
 import { storeToRefs } from 'pinia'
-import { COULDRESETFILEDS } from './config'
 import { select, selectAll } from 'd3-selection'
 import { zoom as d3Zoom, zoomIdentity } from 'd3-zoom'
 import { preventWindowDefault, shortcutKeydown } from './shortcutKey'
@@ -174,6 +173,7 @@ import {
   renderVirtualRelationPath,
   updateRenderVirtualRelationPath,
   createCustomXMindDEFS,
+  drawImageControlNode,
   drawRealRealtionPath,
   updateRedrawNodeStyle
 } from './graph/draw'
@@ -256,8 +256,9 @@ export default defineComponent({
     const editorNodeValue = ref(null)
     const currentInsertSummaryId = ref(null)
     const drawRelationIng = ref(false)
-    const controllerClassName = ref(null)
-    const summaryControllerName = ref(null)
+    const controlName = ref(null)
+    const summaryControlName = ref(null)
+    const imageContolName = ref(null)
     const relationNodeSubject = ref(null)
     const isPastState = ref(true)
     const editorPosition = ref(null)
@@ -313,6 +314,9 @@ export default defineComponent({
       mitter.on('summary-handler-dblclick', function ({ event, _this }) {
         summaryHandlerDblclick(event, _this)
       })
+      mitter.on('image-handler-click', function ({ event, _this }) {
+        imageHandlerDblclick(event, _this)
+      })
       mitter.on('expand-handler-click', function ({ event, _this }) {
         event.stopPropagation()
         const currnentNode = select(_this).datum()
@@ -330,7 +334,7 @@ export default defineComponent({
       })
       mitter.on('relation-controller-mousedown', function ({ event, _this }) {
         event.stopPropagation()
-        controllerClassName.value = select(_this)
+        controlName.value = select(_this)
           .attr('class')
         relationNodeSubject.value = select(_this.parentNode)
           .classed('active-relation', true)
@@ -386,6 +390,7 @@ export default defineComponent({
         .append('g')
         .attr('class', 'map-outter-container')
       createCustomXMindDEFS()
+      drawImageControlNode(mindContainer)
       initRnderCanvas()
       const localTransform = localStorage.getItem('transform')
       setXMindMapCenter(localTransform ? JSON.parse(localTransform) : undefined)
@@ -402,6 +407,7 @@ export default defineComponent({
         .on('start', function (event) {
           hiddenPopover()
           removeNodeHighLight()
+          hideElementControlNode()
           if (event.sourceEvent && event.sourceEvent.type !== 'wheel') {
             select(this).classed('grabbing', true)
           }
@@ -598,11 +604,13 @@ export default defineComponent({
         appendXmindHistory()
       }
       removeSummaryNodeHighLight()
+      hideElementControlNode()
     }
 
     function nodeHandlerDblclick (event, _this) {
       event.stopPropagation()
       removeNodeHighLight()
+      hideElementControlNode()
       currnentNode.value = select(_this).datum()
       nodeHighLight(currnentNode.value.data._id)
       editorTypeName.value = 'text'
@@ -639,7 +647,7 @@ export default defineComponent({
           select(`#relation-${id}`).remove()
         })
         dragIngSubject.value = subject
-        select('#zx-xmind-map-svg').classed('moving', true)
+        svg.classed('moving', true)
       }
       const { tx = 0, ty = 0 } = select(_this).datum()
       select(_this).datum().tx = tx + event.dx
@@ -653,18 +661,19 @@ export default defineComponent({
         const data = copyOrCutXmindNode(root.children, root, dragIngSubject.value.data._id, true)
         insertXmindNode([root], dragEnterNodeId, 'child', data)
       }
-      select('.nodedragenter-border').style('opacity', 0)
+      select('.nodedragenter-shadow').style('opacity', 0)
       select(_this).remove()
       dragEnterNodeId = null
       dragIngSubject.value = null
       updateXmindCanvas()
-      select('#zx-xmind-map-svg').classed('moving', false)
+      svg.classed('moving', false)
     }
 
     function nodeHandlerClick (event, _this) {
       event.stopPropagation()
       removeSummaryNodeHighLight()
       removeRelationNodeHighLight()
+      hideElementControlNode()
       if (!event.altKey) {
         removeNodeHighLight()
         currnentNode.value = select(_this).datum()
@@ -828,7 +837,6 @@ export default defineComponent({
           break
         case 'copy-style':
           copyStyle.value = getNodeCustomStyle(currnentNode.value.data)
-          console.log(currnentNode.value)
           hiddenPopover()
           break
         case 'reference-style':
@@ -1005,6 +1013,7 @@ export default defineComponent({
       event.preventDefault()
       hiddenPopover()
       removeNodeHighLight()
+      hideElementControlNode()
       currnentNode.value = select(_this).datum()
       const id = currnentNode.value.data._id
       nodeHighLight(id)
@@ -1043,20 +1052,19 @@ export default defineComponent({
         const data = select(_this).datum()
         dragEnterNodeId = data.data._id
         const strokeWidth = data.style.strokeWidth / 2
-        const isExist = !select('.nodedragenter-border').empty()
+        const isExist = !select('.nodedragenter-shadow').empty()
         const ele = isExist
-          ? mindContainer.select('.nodedragenter-border')
-          : mindContainer.append('rect').attr('class', 'nodedragenter-border')
+          ? mindContainer.select('.nodedragenter-shadow')
+          : mindContainer.append('rect').attr('class', 'nodedragenter-shadow')
         ele.attr('rx', 4)
           .attr('ry', 4)
-          .attr('stroke', '#2080f7')
-          .attr('stroke-width', 2)
           .attr('x', data.x - 6 - strokeWidth)
           .attr('y', data.y - 6 - strokeWidth)
           .attr('width', data.width + (6 + strokeWidth) * 2)
           .attr('height', data.height + (6 + strokeWidth) * 2)
-          .attr('stroke-dasharray', '6, 6')
-          .attr('fill', 'none')
+          .attr('stroke', '#2080f780')
+          .attr('stroke-width', 2)
+          .attr('fill', '#2080f740')
           .style('opacity', 1)
       }
     }
@@ -1071,7 +1079,7 @@ export default defineComponent({
         .attr('opacity', 0)
       if (dragIngSubject.value) {
         dragEnterNodeId = null
-        select('.nodedragenter-border').style('opacity', 0)
+        select('.nodedragenter-shadow').style('opacity', 0)
       }
     }
 
@@ -1131,7 +1139,7 @@ export default defineComponent({
           .attr('style', 'cursor: n-resize;')
           .on('mousedown', function (event) {
             event.stopPropagation()
-            summaryControllerName.value = select(this).attr('class')
+            summaryControlName.value = select(this).attr('class')
             const sourcedata = select(`#${sourceId}`).datum()
             summaryBrothers = sourcedata.parent.children
             summaryArea = {
@@ -1158,6 +1166,7 @@ export default defineComponent({
       event && event.stopPropagation()
       if (readOnly.value) return
       removeNodeHighLight()
+      hideElementControlNode()
       const id = parentId || select(_this).datum().parentId
       selectAll('.mind-map-summarybox > g > g')
         .filter(n => n.parentId !== id)
@@ -1185,6 +1194,45 @@ export default defineComponent({
       editorVisible.value = true
     }
 
+    function imageHandlerDblclick (event, _this) {
+      event.stopPropagation()
+      if (readOnly.value) return
+      const imageNode = select(_this)
+      const x = Number(imageNode.attr('x'))
+      const y = Number(imageNode.attr('y'))
+      const width = Number(imageNode.attr('width'))
+      const height = Number(imageNode.attr('height'))
+      const controlNode = select('.element-drag-controller')
+        .attr('data-id', select(_this.parentNode.parentNode).attr('id'))
+        .raise()
+        .style('display', 'block')
+      controlNode.select('image').remove()
+      controlNode
+        .select('path')
+        .attr('d', `M${x} ${y} H${x + width} V${y + height} H${x} V${y}`)
+      controlNode.select('.top-left-point').attr('x', x - 4).attr('y', y - 4)
+      controlNode.select('.top-right-point').attr('x', x + width - 4).attr('y', y - 4)
+      controlNode.select('.bottom-right-point').attr('x', x + width - 4).attr('y', y + height - 4)
+      controlNode.select('.bottom-left-point').attr('x', x - 4).attr('y', y + height - 4)
+      controlNode
+        .insert(() => imageNode.clone().node(), 'path')
+        .attr('opacity', 0.4)
+      controlNode.selectAll('.control-point')
+        .on('mousedown', function (event) {
+          event.stopPropagation()
+          imageContolName.value = select(this).attr('class').split(' ')[0]
+          if (['top-left-point', 'bottom-right-point'].includes(imageContolName.value)) {
+            svg.classed('nw-resize', true)
+          } else {
+            svg.classed('ne-resize', true)
+          }
+        })
+
+      removeNodeHighLight()
+      removeSummaryNodeHighLight()
+      removeRelationNodeHighLight()
+    }
+
     function relationNodeHandlerClick (event, _this) {
       event.stopPropagation()
       if (hasMoveEvent) {
@@ -1193,6 +1241,7 @@ export default defineComponent({
       }
       if (select(_this).classed('active-relation')) return
       removeNodeHighLight()
+      hideElementControlNode()
       select('.mind-map-relationbox')
         .selectAll('.active-relation')
         .classed('active-relation', false)
@@ -1387,10 +1436,10 @@ export default defineComponent({
         .node()
         .getBoundingClientRect()
       container.attr('transform', `translate(${Math.abs(x) + 20}, ${Math.abs(y) + 20}) scale(1)`)
-      select('#zx-xmind-map-svg')
+      svg
         .attr('width', width + 40)
         .attr('height', height + 40)
-      const cloneSvg = select('#zx-xmind-map-svg')
+      const cloneSvg = svg
         .clone(true)
         .attr('style', 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);')
       cloneSvg.select('.map-outter-container')
@@ -1400,7 +1449,7 @@ export default defineComponent({
         .attr('width', width + 40)
         .attr('height', height + 40)
         .attr('fill', backgroundColor.value)
-      select('#zx-xmind-map-svg')
+      svg
         .attr('width', canvasWidth)
         .attr('height', canvasHeight)
       container
@@ -1442,6 +1491,7 @@ export default defineComponent({
         hiddenPopover()
         removeSummaryNodeHighLight()
         removeRelationNodeHighLight()
+        hideElementControlNode()
       }
       if (drawRelationIng.value) {
         exitDrawRelation()
@@ -1451,104 +1501,170 @@ export default defineComponent({
     function mouseMoveIngOnScreen (event) {
       if (domainStart) {
         drawAllSelectDomain(event, domainStart, updateSelectNodeHighLight)
-      } else if (drawRelationIng.value) {
+      }
+      if (drawRelationIng.value) {
         const { x, y } = event
         const { x: tx, y: ty, k } = eventTransform
         updateRenderVirtualRelationPath({ x1: (x - tx) / k, y1: (y - ty) / k })
-      } else if (controllerClassName.value) {
+      }
+      if (controlName.value) {
         hasMoveEvent = true
-        if (controllerClassName.value.includes('rect')) {
+        if (controlName.value.includes('rect')) {
           relationPathControlMove(event)
-        } else if (controllerClassName.value.includes('circle')) {
+        } else if (controlName.value.includes('circle')) {
           relationPathPointMove(event)
         }
-      } else if (summaryControllerName.value) {
+      }
+      if (summaryControlName.value) {
         summaryControlMove(event)
       }
-    }
-
-    function summaryControlMove (event) {
-      const y = event.movementY / eventTransform.k
-      const pageY = event.pageY
-      const targetEle = select('.mind-map-summarybox .select-target-summary')
-      const height = Number(targetEle.attr('height'))
-      const oldY = Number(targetEle.attr('y'))
-      const controlEle = select(`.${summaryControllerName.value.split(' ')[1]}`)
-      const controlEleY = controlEle.node().getBoundingClientRect().y
-      const controlY = Number(controlEle.attr('y'))
-      // 鼠标y坐标不在区域y坐标区间内不执行拖动
-      if ((y < 0 && pageY > controlEleY) || (y > 0 && pageY < controlEleY)) {
-        return
+      if (imageContolName.value) {
+        imageControlPointMove(event)
       }
-      const idx = pageY > controlEleY ? 1 : 0
-      if (summaryControllerName.value.includes('down')) {
-        if ((height + y + oldY <= summaryArea.downArea[0]) || ((height + y + oldY >= summaryArea.downArea[1]))) {
-          targetEle.attr('height', summaryArea.downArea[idx] - oldY)
-          controlEle.attr('y', summaryArea.downArea[idx] - 4)
+
+      /**
+     * 概要连线上的控制点拖动修改概要范围
+     * @param {*} event
+     */
+      function summaryControlMove (event) {
+        const y = event.movementY / eventTransform.k
+        const pageY = event.pageY
+        const targetEle = select('.mind-map-summarybox .select-target-summary')
+        const height = Number(targetEle.attr('height'))
+        const oldY = Number(targetEle.attr('y'))
+        const controlEle = select(`.${summaryControlName.value.split(' ')[1]}`)
+        const controlEleY = controlEle.node().getBoundingClientRect().y
+        const controlY = Number(controlEle.attr('y'))
+        // 鼠标y坐标不在区域y坐标区间内不执行拖动
+        if ((y < 0 && pageY > controlEleY) || (y > 0 && pageY < controlEleY)) {
           return
         }
-        targetEle.attr('height', height + y)
-        controlEle.attr('y', controlY + y)
-      } else if (summaryControllerName.value.includes('up')) {
-        if ((oldY + y <= summaryArea.upArea[0]) || (oldY + y >= summaryArea.upArea[1])) {
-          targetEle.attr('y', summaryArea.upArea[idx])
-          targetEle.attr('height', height - summaryArea.upArea[idx] + oldY)
-          controlEle.attr('y', controlY + summaryArea.upArea[idx] - oldY)
+        const idx = pageY > controlEleY ? 1 : 0
+        if (summaryControlName.value.includes('down')) {
+          if ((height + y + oldY <= summaryArea.downArea[0]) || ((height + y + oldY >= summaryArea.downArea[1]))) {
+            targetEle.attr('height', summaryArea.downArea[idx] - oldY)
+            controlEle.attr('y', summaryArea.downArea[idx] - 4)
+            return
+          }
+          targetEle.attr('height', height + y)
+          controlEle.attr('y', controlY + y)
+        } else if (summaryControlName.value.includes('up')) {
+          if ((oldY + y <= summaryArea.upArea[0]) || (oldY + y >= summaryArea.upArea[1])) {
+            targetEle.attr('y', summaryArea.upArea[idx])
+            targetEle.attr('height', height - summaryArea.upArea[idx] + oldY)
+            controlEle.attr('y', controlY + summaryArea.upArea[idx] - oldY)
+            return
+          }
+          targetEle.attr('y', oldY + y)
+          targetEle.attr('height', height - y)
+          controlEle.attr('y', controlY + y)
+        }
+        svg.classed('n-resize', true)
+      }
+
+      /**
+     * 节点关系连线上的控制点拖动
+     * @param {*} event
+     */
+      function relationPathControlMove (event) {
+        const k = eventTransform.k
+        const { movementX: x, movementY: y } = event
+        const touchName = controlName.value.split('-')[0]
+        const keyName = touchName === 'start' ? 'source' : 'target'
+        relationNodeSubject.value[keyName].controllerDiff.x += x / k
+        relationNodeSubject.value[keyName].controllerDiff.y += y / k
+        const { relationId, source, target } = relationNodeSubject.value
+        try {
+          const { start, end, c1, c2 } = getNodeRelationPathPoints(source, target)
+          updateRelationElementPos(relationId, touchName, keyName, c1, c2, start, end)
+        } catch (error) {
+          console.warn('The node of the relational connection could not be found')
+        }
+      }
+
+      function relationPathPointMove (event) {
+        const { x, y } = event
+        const { x: tx, y: ty, k } = eventTransform
+        const touchName = controlName.value.split('-')[0]
+        const keyName = touchName === 'start' ? 'source' : 'target'
+        const movePoint = { x: (x - tx) / k, y: (y - ty) / k }
+        const { relationId, source, target } = relationNodeSubject.value
+        const targetNodeData = select(`#${keyName === 'source' ? source.id : target.id}`).datum()
+        const centerPoint = { x: targetNodeData.x + targetNodeData.width / 2, y: targetNodeData.y + targetNodeData.height / 2 }
+        const expression = getLinearExpression(movePoint, centerPoint)
+        const intersectPoints = getRectLineIntersectionPoint({
+          y1: targetNodeData.y - 4,
+          x1: targetNodeData.x + targetNodeData.width + 4,
+          y2: targetNodeData.y + targetNodeData.height + 4,
+          x2: targetNodeData.x - 4
+        }, expression)
+        const targetMinPoint = getMinDistancePoint({ x: movePoint.x, y: movePoint.y }, intersectPoints)
+        relationNodeSubject.value[keyName].pointDiff.x = targetMinPoint.x - targetNodeData.x
+        relationNodeSubject.value[keyName].pointDiff.y = targetMinPoint.y - targetNodeData.y
+        try {
+          const { start, end, c1, c2 } = getNodeRelationPathPoints(source, target)
+          select(`#relation-${relationId}`)
+            .select('.controller-model')
+            .select(`.${touchName}-circle`)
+            .datum(keyName === 'source' ? start : end)
+            .attr('cx', d => d.x)
+            .attr('cy', d => d.y)
+          updateRelationElementPos(relationId, touchName, keyName, c1, c2, start, end)
+        } catch (error) {
+          console.warn('The node of the relational connection could not be found')
+        }
+      }
+
+      function imageControlPointMove (event) {
+        const controlNode = select('.element-drag-controller')
+        const imageNode = controlNode.select('image')
+        const x = Number(imageNode.attr('x'))
+        const y = Number(imageNode.attr('y'))
+        const width = Number(imageNode.attr('width'))
+        const height = Number(imageNode.attr('height'))
+        const ratio = width / height
+        let [startX, startY, currentWidth] = [0, 0, 0]
+        const pointClientRect = controlNode.select(`.${imageContolName.value}`).node().getBoundingClientRect()
+        if (event.x > pointClientRect.x && event.movementX <= 0) return
+        if (event.x < pointClientRect.x && event.movementX >= 0) return
+        if (imageContolName.value.includes('top-left')) {
+          // 左上角控制点拖动
+          startX = x + event.movementX
+          startY = y + event.movementX / ratio
+          currentWidth = width - event.movementX
+        } else if (imageContolName.value.includes('top-right')) {
+          // 右上角控制点拖动
+          startX = x
+          startY = y - event.movementX / ratio
+          currentWidth = width + event.movementX
+        } else if (imageContolName.value.includes('bottom-right')) {
+          // 右下角控制点拖动
+          startX = x
+          startY = y
+          currentWidth = width + event.movementX
+        } else {
+          // 左下角控制点拖动
+          startX = x + event.movementX
+          startY = y
+          currentWidth = width - event.movementX
+        }
+        const currentHeight = currentWidth / ratio
+        if (currentWidth <= 20 || currentHeight <= 20 || currentWidth >= 800) {
           return
         }
-        targetEle.attr('y', oldY + y)
-        targetEle.attr('height', height - y)
-        controlEle.attr('y', controlY + y)
-      }
-      svg.classed('n-resize', true)
-    }
-
-    function relationPathControlMove (event) {
-      const k = eventTransform.k
-      const { movementX: x, movementY: y } = event
-      const touchName = controllerClassName.value.split('-')[0]
-      const keyName = touchName === 'start' ? 'source' : 'target'
-      relationNodeSubject.value[keyName].controllerDiff.x += x / k
-      relationNodeSubject.value[keyName].controllerDiff.y += y / k
-      const { relationId, source, target } = relationNodeSubject.value
-      try {
-        const { start, end, c1, c2 } = getNodeRelationPathPoints(source, target)
-        updateRelationElementPos(relationId, touchName, keyName, c1, c2, start, end)
-      } catch (error) {
-        console.warn('The node of the relational connection could not be found')
-      }
-    }
-
-    function relationPathPointMove (event) {
-      const { x, y } = event
-      const { x: tx, y: ty, k } = eventTransform
-      const touchName = controllerClassName.value.split('-')[0]
-      const keyName = touchName === 'start' ? 'source' : 'target'
-      const movePoint = { x: (x - tx) / k, y: (y - ty) / k }
-      const { relationId, source, target } = relationNodeSubject.value
-      const targetNodeData = select(`#${keyName === 'source' ? source.id : target.id}`).datum()
-      const centerPoint = { x: targetNodeData.x + targetNodeData.width / 2, y: targetNodeData.y + targetNodeData.height / 2 }
-      const expression = getLinearExpression(movePoint, centerPoint)
-      const intersectPoints = getRectLineIntersectionPoint({
-        y1: targetNodeData.y - 4,
-        x1: targetNodeData.x + targetNodeData.width + 4,
-        y2: targetNodeData.y + targetNodeData.height + 4,
-        x2: targetNodeData.x - 4
-      }, expression)
-      const targetMinPoint = getMinDistancePoint({ x: movePoint.x, y: movePoint.y }, intersectPoints)
-      relationNodeSubject.value[keyName].pointDiff.x = targetMinPoint.x - targetNodeData.x
-      relationNodeSubject.value[keyName].pointDiff.y = targetMinPoint.y - targetNodeData.y
-      try {
-        const { start, end, c1, c2 } = getNodeRelationPathPoints(source, target)
-        select(`#relation-${relationId}`)
-          .select('.controller-model')
-          .select(`.${touchName}-circle`)
-          .datum(keyName === 'source' ? start : end)
-          .attr('cx', d => d.x)
-          .attr('cy', d => d.y)
-        updateRelationElementPos(relationId, touchName, keyName, c1, c2, start, end)
-      } catch (error) {
-        console.warn('The node of the relational connection could not be found')
+        controlNode
+          .select('path')
+          .attr('d', `M${startX} ${startY} H${startX + currentWidth} V${startY + currentHeight} H${startX} V${startY}`)
+        controlNode
+          .select('image')
+          .attr('x', startX)
+          .attr('y', startY)
+          .attr('width', currentWidth)
+          .attr('height', currentHeight)
+        controlNode.select('.top-left-point').attr('x', startX - 4).attr('y', startY - 4)
+        controlNode.select('.top-right-point').attr('x', startX + currentWidth - 4).attr('y', startY - 4)
+        controlNode.select('.bottom-right-point').attr('x', startX + currentWidth - 4).attr('y', startY + currentHeight - 4)
+        controlNode.select('.bottom-left-point').attr('x', startX - 4).attr('y', startY + currentHeight - 4)
       }
     }
 
@@ -1591,11 +1707,23 @@ export default defineComponent({
       if (selectNodes.value.length === 1) {
         currnentNode.value = selectNodes.value[0]
       }
-      if (controllerClassName.value) {
+      if (controlName.value) {
         moveControllerEnd()
       }
-      if (summaryControllerName.value) {
+      if (summaryControlName.value) {
         moveSummaryControlEnd()
+      }
+      if (imageContolName.value) {
+        const id = select('.element-drag-controller').attr('data-id')
+        const width = Number(select('.element-drag-controller image').attr('width'))
+        const height = Number(select('.element-drag-controller image').attr('height'))
+        const data = getTargetDataById(root, id)
+        data.imageInfo.width = width
+        data.imageInfo.height = height
+        imageContolName.value = null
+        svg.classed('nw-resize', false)
+        svg.classed('ne-resize', false)
+        updateXmindCanvas()
       }
     }
 
@@ -1646,7 +1774,7 @@ export default defineComponent({
       }
       removeSummaryNodeHighLight()
       svg.classed('n-resize', false)
-      summaryControllerName.value = false
+      summaryControlName.value = false
       updateXmindCanvas()
     }
 
@@ -1697,7 +1825,7 @@ export default defineComponent({
         const relations = sourceNodeData.relations
         const idx = relations.findIndex(o => o.relationId === relationId)
         const targetRelationItem = relations[idx]
-        if (controllerClassName.value.includes('start')) {
+        if (controlName.value.includes('start')) {
           relations.splice(idx, 1, {
             ...targetRelationItem,
             sourceInfo: source
@@ -1713,7 +1841,7 @@ export default defineComponent({
       } catch (error) {
         console.warn('drag node error')
       }
-      controllerClassName.value = null
+      controlName.value = null
       relationNodeSubject.value = null
       svg.classed('grabbing', false)
     }
@@ -1724,6 +1852,16 @@ export default defineComponent({
         .select('.virtual-relation-path')
         .remove()
     }
+
+    function appendXmindHistory () {
+      currentStep.value = 0
+      historyStep.value.unshift(JSON.parse(JSON.stringify(root)))
+    }
+
+    const duration = computed(() => {
+      if (!editorPosition.value) return '0.3s'
+      return 0
+    })
 
     function hiddenPopover () {
       editorVisible.value = false
@@ -1776,22 +1914,23 @@ export default defineComponent({
         .attr('stroke', 'transparnet')
     }
 
-    function appendXmindHistory () {
-      currentStep.value = 0
-      historyStep.value.unshift(JSON.parse(JSON.stringify(root)))
+    function hideElementControlNode () {
+      select('.element-drag-controller').style('display', 'none')
     }
 
-    const duration = computed(() => {
-      if (!editorPosition.value) {
-        return '0.3s'
-      }
-      return 0
-    })
+    function outXmindClick () {
+      hiddenPopover()
+      removeNodeHighLight()
+      removeSummaryNodeHighLight()
+      removeRelationNodeHighLight()
+      hideElementControlNode()
+    }
 
     function shortcutMitters () {
       mitter.on('select-all', function () {
         hiddenPopover()
         removeNodeHighLight()
+        hideElementControlNode()
         const selections = select('.mind-map-nodebox')
           .selectAll('.x-mind-nodetheme')
         selections.nodes().forEach(selection => {
@@ -1859,12 +1998,14 @@ export default defineComponent({
         }
       })
       mitter.on('delete', function () {
+        // 删除节点
         const ids = selectNodes.value.map(n => n.data._id)
         if (ids.length) {
           batchDeleteXmindNode(root.children || [], ids)
           updateXmindCanvas()
           return
         }
+        // 删除概要
         if (selectCombinationId.value) {
           const nodeIds = selectCombinationId.value.split('-')
           const target = getTargetDataById(root, nodeIds[0])
@@ -1874,6 +2015,12 @@ export default defineComponent({
             targetSummarys.splice(idx, 1)
             updateXmindCanvas()
           }
+        }
+        // 删除图片
+        if (select('.element-drag-controller').style('display') === 'block') {
+          const id = select('.element-drag-controller').attr('data-id')
+          recursiveTreeValue(root, id, 'imageInfo', null)
+          updateXmindCanvas()
         }
       })
       mitter.on('step-prev', function () {
@@ -1898,6 +2045,7 @@ export default defineComponent({
         removeNodeHighLight()
         removeSummaryNodeHighLight()
         removeRelationNodeHighLight()
+        hideElementControlNode()
       }
     })
 
@@ -1962,6 +2110,7 @@ export default defineComponent({
       setCanvasJson,
       getCommentHtml,
       setXMindMapCenter,
+      outXmindClick,
       removeSummaryNodeHighLight,
       removeRelationNodeHighLight
     }
@@ -1988,6 +2137,12 @@ export default defineComponent({
     }
     &.n-resize {
       cursor: n-resize;
+    }
+    &.nw-resize, .top-left-point, .bottom-right-point {
+      cursor: nw-resize;
+    }
+    &.ne-resize, .top-right-point, .bottom-left-point {
+      cursor: ne-resize;
     }
   }
 }
@@ -2135,8 +2290,12 @@ export default defineComponent({
   }
 }
 
-.rela-relation-path, .nodedragenter-border {
+.rela-relation-path {
   animation: relation-path-move 10s infinite linear;
+}
+
+.nodedragenter-shadow {
+  pointer-events: none;
 }
 
 .node-summary-description, .node-text-description {

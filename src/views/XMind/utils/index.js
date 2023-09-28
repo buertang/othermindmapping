@@ -251,7 +251,7 @@ export function splitLeftRightRoot (root, structure) {
     const len = root.children.length
     const cacheNodes = setRightLeftNodes(root.children)
     for (let i = 0; i < cacheNodes.length; i++) {
-      if (rightRoot.children.length < Math.floor(len / 2)) {
+      if (rightRoot.children.length + cacheNodes[i].length <= Math.floor(len / 2)) {
         rightRoot.children.push(...cacheNodes[i])
       } else {
         leftRoot.children.push(...cacheNodes[i])
@@ -309,7 +309,12 @@ function setRightLeftNodes (nodes) {
  */
 export function recursiveTreeValue (node, id, key, value) {
   if (node._id === id) {
-    node[key] = value
+    if (key.includes('.')) {
+      const keys = key.split('.')
+      node[keys[0]][keys[1]] = value
+    } else {
+      node[key] = value
+    }
     if (key === 'tiezhi' && value) {
       node.imageInfo = null
     } else if (key === 'imageInfo' && value) {
@@ -365,15 +370,15 @@ export function resetRootNodeStyleFiled (root, deep) {
 /**
  * 根据_id获取指定数据
  * @param {*} data
- * @param {*} id
+ * @param {*} value
  */
-export function getTargetDataById (data, value) {
-  if (data._id === value) {
+export function getTargetDataById (data, id) {
+  if (data._id === id) {
     return data
   }
   if (hasChild(data)) {
     for (let i = 0; i < data.children.length; i++) {
-      const d = getTargetDataById(data.children[i], value)
+      const d = getTargetDataById(data.children[i], id)
       if (d) {
         return d
       }
@@ -468,7 +473,8 @@ export function exportJSON (name, json) {
 export function svgToPng (svgSrc) {
   return new Promise((resolve, reject) => {
     const img = new Image()
-    img.setAttribute('crossOrigin', 'anonymous')
+    img.src = svgSrc
+    img.setAttribute('crossOrigin', 'Anonymous')
     img.onload = function () {
       try {
         const canvas = document.createElement('canvas')
@@ -484,7 +490,6 @@ export function svgToPng (svgSrc) {
     img.onerror = function (e) {
       reject(e)
     }
-    img.src = svgSrc
   })
 }
 

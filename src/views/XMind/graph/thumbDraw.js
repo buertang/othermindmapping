@@ -614,6 +614,7 @@ export function renderNewSummaryNode () {
         const targetId = targetSummarys[i].id
         const targetNode = select(`#${targetId}`)
         if (targetNode.empty()) continue
+        if (targetNode.datum().parent.data._id !== node.parent.data._id) continue
         const brothers = targetNode.datum().parent?.children || []
         const startIdx = brothers.findIndex(o => o.data._id === node.data._id)
         const endIdx = brothers.findIndex(o => o.data._id === targetId)

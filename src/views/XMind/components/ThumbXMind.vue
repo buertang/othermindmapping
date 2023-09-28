@@ -218,6 +218,7 @@ export default defineComponent({
     left: 0;
     top: 0;
     box-sizing: content-box;
+    border-radius: 4px;
     cursor: move;
     .thumb-radio {
       width: 10px;

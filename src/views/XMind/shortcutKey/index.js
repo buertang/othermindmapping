@@ -67,12 +67,6 @@ export function shortcutKeydown () {
       mitter.emit('delete')
     }
 
-    // 删除概要节点 Ctrl + Delete
-    if (event.ctrlKey && event.code === 'Delete') {
-      event.preventDefault()
-      mitter.emit('delete-summary')
-    }
-
     // 上一步
     if (event.ctrlKey && event.code === 'KeyZ') {
       event.preventDefault()
