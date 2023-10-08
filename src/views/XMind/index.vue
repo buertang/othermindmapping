@@ -648,6 +648,7 @@ export default defineComponent({
         })
         dragIngSubject.value = subject
         svg.classed('moving', true)
+        hideElementControlNode()
       }
       const { tx = 0, ty = 0 } = select(_this).datum()
       select(_this).datum().tx = tx + event.dx

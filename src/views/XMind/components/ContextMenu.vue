@@ -15,7 +15,9 @@
             <span>{{ item.shortKey }}</span>
             <i v-if="item.children?.length" class="ri-arrow-right-s-fill"></i>
           </p>
-          <ul class="ul-item-children" v-if="item.children?.length">
+          <ul
+            :class="{ 'pos-bottom': item.name === '删除' && type === 'single' }"
+            class="ul-item-children" v-if="item.children?.length">
             <li
               @click="contextMenuClick(itemName)"
               :class="{
@@ -346,6 +348,10 @@ export default defineComponent({
       border-radius: 2px;
       background: #fff;
       display: none;
+      &.pos-bottom {
+        bottom: 0;
+        top: auto;
+      }
       li {
         height: 30px;
         width: 150px;
