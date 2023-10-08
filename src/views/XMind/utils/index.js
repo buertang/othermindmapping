@@ -446,8 +446,8 @@ export async function exportPNG (htmlStr) {
     const blob = new Blob([htmlStr], {
       type: 'image/svg+xml'
     })
-    const svgUrl = URL.createObjectURL(blob)
-    const file = await svgToPng(svgUrl)
+    const imageSrc = URL.createObjectURL(blob)
+    const file = await svgToPng(imageSrc)
     const a = document.createElement('a')
     a.href = file
     a.download = 'xmind.png'
@@ -470,10 +470,10 @@ export function exportJSON (name, json) {
   a.click()
 }
 
-export function svgToPng (svgSrc) {
+export function svgToPng (imageSrc) {
   return new Promise((resolve, reject) => {
     const img = new Image()
-    img.src = svgSrc
+    img.src = imageSrc
     img.setAttribute('crossOrigin', 'Anonymous')
     img.onload = function () {
       try {
@@ -482,7 +482,7 @@ export function svgToPng (svgSrc) {
         canvas.height = img.height + 20
         const ctx = canvas.getContext('2d')
         ctx.drawImage(img, 0, 0, img.width, img.height, 10, 10, img.width, img.height)
-        resolve(canvas.toDataURL())
+        resolve(canvas.toDataURL('image/png'))
       } catch (error) {
         reject(error)
       }

@@ -279,14 +279,14 @@ export default defineComponent({
 .xmind-context-menu {
   position: fixed;
   z-index: 999;
-  box-shadow: 0px 0px 18px 5px rgba(0,0,0,0.1);
+  box-shadow: inset 0px 0px 3px 0px rgba(255, 255, 255, 0.1), 0px 0px 3px 0px rgba(0, 0, 0, 0.14), 0px 8px 40px 0px rgba(0, 0, 0, 0.06);
   padding: 12px 0;
-  border-radius: 2px;
+  border-radius: 10px;
   background: #fff;
   ul {
     li {
       height: 36px;
-      width: 180px;
+      width: 200px;
       position: relative;
       user-select: none;
       &.has-child {
@@ -308,7 +308,7 @@ export default defineComponent({
       p {
         height: 100%;
         white-space: nowrap;
-        color: #000;
+        color: #27292A;
         padding: 0 18px;
         font-size: 12px;
         cursor: url('~@/assets/images/pointer.png'), auto;
@@ -317,24 +317,26 @@ export default defineComponent({
         justify-content: space-between;
         align-items: center;
         span {
-          color: #999;
+          color: #949699;
           font-size: 12px;
         }
         .ri-arrow-right-s-fill {
           font-size: 16px;
-          color: #4c4c4c;
+          color: #27292A;
         }
       }
       &:hover {
         background: #f5f5f5;
       }
-      &.x_disabled {
-        opacity: .5;
-        cursor: not-allowed;
-      }
       &.x_warning {
         p {
           color: #cd1c1c;
+        }
+      }
+      &.x_disabled {
+        pointer-events: none;
+        span, p {
+          color: rgba(0, 0, 0, 0.1);
         }
       }
     }
@@ -343,9 +345,9 @@ export default defineComponent({
       right: -5px;
       top: 0;
       transform: translateX(100%);
-      box-shadow: 0px 0px 18px 5px rgba(0,0,0,0.1);
+      box-shadow: inset 0px 0px 3px 0px rgba(255, 255, 255, 0.1), 0px 0px 3px 0px rgba(0, 0, 0, 0.14), 0px 8px 40px 0px rgba(0, 0, 0, 0.06);
       padding: 6px 0;
-      border-radius: 2px;
+      border-radius: 10px;
       background: #fff;
       display: none;
       &.pos-bottom {
@@ -354,7 +356,7 @@ export default defineComponent({
       }
       li {
         height: 30px;
-        width: 150px;
+        width: 180px;
         position: relative;
       }
     }

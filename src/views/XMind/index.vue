@@ -6,7 +6,7 @@
       :style="{ 'background-color': backgroundColor }"
       @click="outXmindClick"></div>
 
-    <transition name="editor-fade-in">
+    <transition :name="!editorPosition ? 'editor-fade-in' : null">
       <Editor
         @mousedown.stop
         @set-editable-value="setEditableValue"
@@ -1859,11 +1859,6 @@ export default defineComponent({
       historyStep.value.unshift(JSON.parse(JSON.stringify(root)))
     }
 
-    const duration = computed(() => {
-      if (!editorPosition.value) return '0.3s'
-      return 0
-    })
-
     function hiddenPopover () {
       editorVisible.value = false
       contextVisible.value = false
@@ -2092,7 +2087,6 @@ export default defineComponent({
       editorNodeValue,
       drawRelationIng,
       editorPosition,
-      duration,
       updateXmindCanvas,
       setEditableValue,
       moveXmindMap,
@@ -2220,7 +2214,7 @@ export default defineComponent({
 .editor-fade-in-enter-active, .editor-fade-in-leave-active {
   transform: translateX(-50%) translateY(0);
   opacity: 1;
-  transition: v-bind(duration) ease;
+  transition: .3s ease;
 }
 .editor-fade-in-enter-from,
 .editor-fade-in-leave-to {
