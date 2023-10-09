@@ -427,6 +427,7 @@ export function storageRootRelaTime (root) {
  * @param { String } htmlStr
  */
 export function exportSVG (htmlStr) {
+  console.log(htmlStr)
   const blob = new Blob([htmlStr], {
     type: 'image/svg+xml'
   })
@@ -446,7 +447,7 @@ export async function exportPNG (htmlStr) {
     const blob = new Blob([htmlStr], {
       type: 'image/svg+xml'
     })
-    const imageSrc = URL.createObjectURL(blob)
+    const imageSrc = await blobToUrl(blob)
     const file = await svgToPng(imageSrc)
     const a = document.createElement('a')
     a.href = file
@@ -455,6 +456,52 @@ export async function exportPNG (htmlStr) {
   } catch (error) {
     console.log(error)
   }
+}
+
+/**
+ * blob 转成 base64
+ * @param {*} blob
+ * @returns
+ */
+function blobToUrl (blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = evt => {
+      resolve(evt.target.result)
+    }
+    reader.onerror = err => {
+      reject(err)
+    }
+    reader.readAsDataURL(blob)
+  })
+}
+
+/**
+ * canvas绘制base64图片
+ * @param {*} imageSrc
+ * @returns
+ */
+export function svgToPng (imageSrc) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.src = imageSrc
+    img.setAttribute('crossOrigin', 'Anonymous')
+    img.onload = function () {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width + 20
+        canvas.height = img.height + 20
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, img.width, img.height, 10, 10, img.width, img.height)
+        resolve(canvas.toDataURL())
+      } catch (error) {
+        reject(error)
+      }
+    }
+    img.onerror = function (e) {
+      reject(e)
+    }
+  })
 }
 
 /**
@@ -468,29 +515,6 @@ export function exportJSON (name, json) {
   a.href = file
   a.download = `${name}.json`
   a.click()
-}
-
-export function svgToPng (imageSrc) {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.src = imageSrc
-    img.setAttribute('crossOrigin', 'Anonymous')
-    img.onload = function () {
-      try {
-        const canvas = document.createElement('canvas')
-        canvas.width = img.width + 20
-        canvas.height = img.height + 20
-        const ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0, img.width, img.height, 10, 10, img.width, img.height)
-        resolve(canvas.toDataURL('image/png'))
-      } catch (error) {
-        reject(error)
-      }
-    }
-    img.onerror = function (e) {
-      reject(e)
-    }
-  })
 }
 
 export function debounce (func, delay) {

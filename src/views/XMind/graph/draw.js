@@ -106,6 +106,7 @@ export function renderNewNodes (nodes, theme, structure) {
     })
     .attr('y', d => d.y + d.height - d.data.foreignObjectHeight - d.style.margin._b)
     .append('xhtml:p')
+    .attr('xmlns', 'http://www.w3.org/1999/xhtml')
     .attr('class', 'node-text-description')
     .text(d => d.data.text)
     .style('color', d => d.style.textStyle.color)
@@ -731,7 +732,11 @@ export function renderNewEdges (links) {
       if (d.target.direction === 'bottom') {
         const { sx, sy } = sourcePoint
         const { tx, ty } = targetPoint
-        return `M${sx} ${sy} L${sx} ${sy + 18} L${tx} ${sy + 18} ${tx} ${ty}`
+        const unit = tx > sx ? -1 : 1
+        if (tx !== sx) {
+          return `M${sx} ${sy} L${sx} ${sy + 18} L${tx + 5 * unit} ${sy + 18} Q${tx} ${sy + 18} ${tx} ${sy + 23} L${tx} ${ty}`
+        }
+        return `M${sx} ${sy} L${tx} ${ty}`
       }
       const lineWidth = d.source.style.lineStyle.lineWidth
       return edgeStyleMap[edgeStyleValue]({
@@ -801,7 +806,11 @@ export function renderUpdateEdges (links) {
       if (d.target.direction === 'bottom') {
         const { sx, sy } = sourcePoint
         const { tx, ty } = targetPoint
-        return `M${sx} ${sy} L${sx} ${sy + 18} L${tx} ${sy + 18} ${tx} ${ty}`
+        const unit = tx > sx ? -1 : 1
+        if (tx !== sx) {
+          return `M${sx} ${sy} L${sx} ${sy + 18} L${tx + 5 * unit} ${sy + 18} Q${tx} ${sy + 18} ${tx} ${sy + 23} L${tx} ${ty}`
+        }
+        return `M${sx} ${sy} L${tx} ${ty}`
       }
       const lineWidth = d.source.style.lineStyle.lineWidth
       return edgeStyleMap[edgeStyleValue]({
@@ -935,9 +944,10 @@ export function renderNewSummaryNode (id) {
                       .attr('width', targetSummarys[i].summaryWidth)
                       .attr('height', targetSummarys[i].summaryHeight)
                       .append('xhtml:p')
+                      .attr('xmlns', 'http://www.w3.org/1999/xhtml')
                       .attr('class', 'node-summary-description')
-                      .text(targetSummarys[i].text)
                       .style('color', xmindTheme.summaryTextColor)
+                      .text(targetSummarys[i].text)
                       .each(function () {
                         select(this.parentNode.parentNode)
                           .append('rect')

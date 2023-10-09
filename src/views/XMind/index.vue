@@ -190,7 +190,7 @@ import IconSelectModal from './components/IconSelectModal.vue'
 import SidebarTriggerContainer from './components/SidebarTriggerContainer.vue'
 let root = window.localStorage.getItem('root')
   ? JSON.parse(window.localStorage.getItem('root'))
-  : createNodeIntance('主题根节点')
+  : createNodeIntance('中心主题')
 let svg = null
 let mindContainer = null
 let canvasWidth = 0
@@ -1449,6 +1449,18 @@ export default defineComponent({
         .attr('width', width + 40)
         .attr('height', height + 40)
         .attr('fill', backgroundColor.value)
+      cloneSvg.selectAll('.node-text-description, .node-summary-description')
+        .style('white-space', 'pre-wrap')
+        .style('line-height', 'inherit')
+        .style('padding', 0)
+        .style('margin', 0)
+        .style('max-width', '300px')
+        .style('line-break', 'anywhere')
+        .style('word-break', 'break-all')
+      cloneSvg.selectAll('.node-summary-description')
+        .style('max-width', '420px')
+        .style('font-weight', 'bold')
+        .style('font-size', '12px')
       svg
         .attr('width', canvasWidth)
         .attr('height', canvasHeight)

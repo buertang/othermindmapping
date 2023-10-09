@@ -18,7 +18,7 @@ export default {
           strokeWidth: 0,
           textStyle: {
             color: '#fff',
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: 'normal'
           },
           lineStyle: {
