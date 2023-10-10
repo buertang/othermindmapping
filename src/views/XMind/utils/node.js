@@ -505,8 +505,8 @@ function setParentNodeCenter (node, direction) {
       const firstChild = children[0]
       const lastChild = children[children.length - 1]
       const area = firstChild[pos] + firstChild[sizeName] / 2 + lastChild[pos] + lastChild[sizeName] / 2
-      const parentCenter = area / 2
-      if (node[pos] + node[sizeName] / 2 !== parentCenter) {
+      const parentCenter = Number((area / 2).toFixed(5))
+      if (Number((node[pos] + node[sizeName] / 2).toFixed(5)) !== parentCenter) {
         node[pos] = parentCenter - node[sizeName] / 2
         if (node.parent) {
           _c(node.parent, direction)
