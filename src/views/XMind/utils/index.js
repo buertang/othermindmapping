@@ -315,11 +315,6 @@ export function recursiveTreeValue (node, id, key, value) {
     } else {
       node[key] = value
     }
-    if (key === 'tiezhi' && value) {
-      node.imageInfo = null
-    } else if (key === 'imageInfo' && value) {
-      node.tiezhi = null
-    }
     return
   }
   if (hasChild(node)) {
@@ -390,9 +385,6 @@ export function batchRecursiveTreeValue (node, ids, key, value) {
   const idx = ids.findIndex(id => id === node._id)
   if (idx > -1) {
     node[key] = value
-    if (key === 'tiezhi' && value) {
-      node.imageInfo = null
-    }
     ids.splice(idx, 1)
   }
   if (hasChild(node) && ids.length) {
@@ -448,7 +440,7 @@ export async function exportPNG (htmlStr) {
       type: 'image/svg+xml'
     })
     const imageSrc = await blobToUrl(blob)
-    const file = await svgToPng(imageSrc)
+    const file = await imageToBase64(imageSrc)
     const a = document.createElement('a')
     a.href = file
     a.download = 'xmind.png'
@@ -473,34 +465,6 @@ function blobToUrl (blob) {
       reject(err)
     }
     reader.readAsDataURL(blob)
-  })
-}
-
-/**
- * canvas绘制base64图片
- * @param {*} imageSrc
- * @returns
- */
-export function svgToPng (imageSrc) {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.src = imageSrc
-    img.setAttribute('crossOrigin', 'Anonymous')
-    img.onload = function () {
-      try {
-        const canvas = document.createElement('canvas')
-        canvas.width = img.width + 20
-        canvas.height = img.height + 20
-        const ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0, img.width, img.height, 10, 10, img.width, img.height)
-        resolve(canvas.toDataURL())
-      } catch (error) {
-        reject(error)
-      }
-    }
-    img.onerror = function (e) {
-      reject(e)
-    }
   })
 }
 
@@ -558,6 +522,34 @@ export function statisticTreeCount (root) {
 }
 
 /**
+ * src to base64
+ * @param {*} svgUrl
+ * @returns
+ */
+export function imageToBase64 (svgUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.setAttribute('crossOrigin', 'anonymous')
+    img.onload = async () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width
+        canvas.height = img.height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, img.width, img.height)
+        resolve(canvas.toDataURL())
+      } catch (error) {
+        reject(error)
+      }
+    }
+    img.onerror = e => {
+      reject(e)
+    }
+    img.src = svgUrl
+  })
+}
+
+/**
  * 节点样式获取
  */
 export function getNodeCustomStyle (node) {
@@ -567,6 +559,7 @@ export function getNodeCustomStyle (node) {
     fontWeight,
     fontStyle,
     textDecoration,
+    textDirection,
     textColor,
     strokeColor,
     strokeStyle,
@@ -578,8 +571,7 @@ export function getNodeCustomStyle (node) {
     lineColor,
     verticalInner,
     horizontalInner,
-    horizontalOutter,
-    tiezhiSize
+    horizontalOutter
   } = node.customStyle || {}
   return {
     fontFamily,
@@ -587,6 +579,7 @@ export function getNodeCustomStyle (node) {
     fontWeight,
     fontStyle,
     textDecoration,
+    textDirection,
     textColor,
     strokeColor,
     strokeStyle,
@@ -598,7 +591,6 @@ export function getNodeCustomStyle (node) {
     lineColor,
     verticalInner,
     horizontalInner,
-    horizontalOutter,
-    tiezhiSize
+    horizontalOutter
   }
 }

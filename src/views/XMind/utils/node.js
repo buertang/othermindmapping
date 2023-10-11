@@ -70,15 +70,15 @@ function dataTreeLayoutPackage (root, theme, direction) {
 function calcNodeSize (nodes) {
   nodes.forEach(node => {
     const text = node.data.text
-    const { fontSize, fontWeight, fontFamily, fontStyle } = node.style.textStyle
-    let { width, height } = getTextNodeRect({ text, fontSize, fontWeight, fontFamily, fontStyle })
+    const { fontSize, fontWeight, fontFamily, fontStyle, textDirection } = node.style.textStyle
+    const maxWidth = textDirection === 'ver' ? fontSize + 'px' : '300px'
+    let { width, height } = getTextNodeRect({ text, fontSize, fontWeight, fontFamily, fontStyle, maxWidth })
     node.data.foreignObjectWidth = width
     node.data.foreignObjectHeight = height
     if (node.data.marks && node.data.marks.length) {
       width = width + node.data.marks.length * node.style.markSize - (node.data.marks.length - 1) * node.style.markSize * 0.15 + 6
       height = Math.max(height, node.style.markSize)
     }
-    const onlyPicTiezhi = !node.data.text && !node.data.link && !node.data.comment && !(node.data.marks && node.data.marks.length)
     if (node.data.link || node.data.comment || node.data.tag) {
       if (node.data.link) {
         width += node.style.linkSize + 8
@@ -104,14 +104,10 @@ function calcNodeSize (nodes) {
       }
       height += !node.data.text && !(node.data.marks && node.data.marks.length) ? node.style.linkSize : 0
     }
-    if (node.data.tiezhi) {
-      const tiezhiSize = node.style.tiezhiSize
-      node.width = (width > tiezhiSize ? width : tiezhiSize) + node.style.margin._l + node.style.margin._r
-      node.height = height + node.style.margin._t + node.style.margin._b + tiezhiSize + (onlyPicTiezhi ? 0 : 8)
-    } else if (node.data.imageInfo) {
+    if (node.data.imageInfo) {
       const imageInfo = node.data.imageInfo
       node.width = (width > imageInfo.width ? width : imageInfo.width) + node.style.margin._l + node.style.margin._r
-      node.height = height + node.style.margin._t + node.style.margin._b + imageInfo.height + (onlyPicTiezhi ? 0 : 8)
+      node.height = height + node.style.margin._t + node.style.margin._b + imageInfo.height + 8
     } else {
       node.width = width + node.style.margin._l + node.style.margin._r
       node.height = height + node.style.margin._t + node.style.margin._b
@@ -235,6 +231,7 @@ function setNodesStyle (nodes, themeType, direction) {
       fontWeight,
       fontStyle,
       textDecoration,
+      textDirection,
       textColor,
       strokeColor,
       strokeStyle,
@@ -246,8 +243,7 @@ function setNodesStyle (nodes, themeType, direction) {
       lineColor,
       verticalInner,
       horizontalInner,
-      horizontalOutter,
-      tiezhiSize
+      horizontalOutter
     } = node.data.customStyle || {}
     if (!isEmpty(fontFamily)) {
       node.style.textStyle.fontFamily = fontFamily
@@ -263,6 +259,9 @@ function setNodesStyle (nodes, themeType, direction) {
     }
     if (!isEmpty(textDecoration)) {
       node.style.textStyle.textDecoration = textDecoration
+    }
+    if (!isEmpty(textDirection)) {
+      node.style.textStyle.textDirection = textDirection
     }
     if (!isEmpty(textColor)) {
       node.style.textStyle.color = textColor
@@ -302,11 +301,6 @@ function setNodesStyle (nodes, themeType, direction) {
     }
     if (!isEmpty(horizontalOutter)) {
       node.style.spacing = horizontalOutter
-    }
-    if (!isEmpty(tiezhiSize)) {
-      node.style.tiezhiSize = tiezhiSize
-    } else {
-      node.style.tiezhiSize = 36
     }
   })
 }

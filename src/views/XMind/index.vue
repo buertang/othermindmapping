@@ -53,8 +53,7 @@
     <transition name="tiezhi-fade-in">
       <IconSelectModal
         @mousedown.stop
-        :typeName="iconTypeName"
-        @select-tiezhi-icon="selectTiezhiIcon"
+        @select-tiezhi-icon="insertMarkerIcon"
         @close="tiezhiIconVisible = false"
         v-if="tiezhiIconVisible" />
     </transition>
@@ -158,7 +157,8 @@ import {
   statisticTreeCount,
   getTargetDataById,
   resetRootNodeStyleFiled,
-  getNodeCustomStyle
+  getNodeCustomStyle,
+  imageToBase64
 } from './utils'
 import {
   createCanvasContainer,
@@ -233,7 +233,6 @@ export default defineComponent({
     const editorTypeName = ref('text')
     const currentMarkIcon = ref(null)
     const customDeleteModalPos = ref(null)
-    const iconTypeName = ref()
     const scaleNumber = ref(100)
     const currnentNode = ref(null)
     const selectNodes = ref([])
@@ -792,19 +791,13 @@ export default defineComponent({
           }
           updateXmindCanvas()
           break
-        case 'insert-tiezhi':
-          contextVisible.value = false
-          iconTypeName.value = 'tiezhi'
-          tiezhiIconVisible.value = true
-          break
         case 'insert-tupian':
           contextVisible.value = false
           uploadType.value = 'image'
           uploadImageVisible.value = true
           break
-        case 'insert-biaoji':
+        case 'insert-marker':
           contextVisible.value = false
-          iconTypeName.value = 'mark'
           tiezhiIconVisible.value = true
           break
         case 'insert-tag':
@@ -852,14 +845,6 @@ export default defineComponent({
         case 'cut':
           isPastState.value = false
           copyNodeInstance.value = copyOrCutXmindNode(root.children, root, currnentNode.value.data._id, true)
-          updateXmindCanvas()
-          break
-        case 'delete-tiezhi':
-          if (type === 'single') {
-            recursiveTreeValue(root, currnentNode.value.data._id, 'tiezhi', null)
-          } else if (type === 'global') {
-            batchRecursiveTreeValue(root, ids, 'tiezhi', null)
-          }
           updateXmindCanvas()
           break
         case 'delete-pic':
@@ -932,10 +917,6 @@ export default defineComponent({
           insertXmindNode([root], currnentNode.value.data._id, 'child')
           updateXmindCanvas()
           break
-        case 'insert-tiezhi':
-          iconTypeName.value = 'tiezhi'
-          tiezhiIconVisible.value = true
-          break
         case 'insert-tupian':
           uploadType.value = 'image'
           uploadImageVisible.value = true
@@ -950,8 +931,7 @@ export default defineComponent({
             dataStructureRef.value.setDataList([root])
           })
           break
-        case 'insert-biaoji':
-          iconTypeName.value = 'mark'
+        case 'insert-marker':
           tiezhiIconVisible.value = true
           break
         case 'insert-link':
@@ -1348,28 +1328,27 @@ export default defineComponent({
     }
 
     /**
-     * 单个或者批量插入插画贴纸或者标记贴纸
+     * 插入插画贴纸或者标记贴纸
      */
-    function selectTiezhiIcon (iconItem) {
-      if (selectNodes.value.length > 1) {
-        if (!iconItem.type) {
-          batchRecursiveTreeValue(root, selectNodes.value.map(n => n.data._id), 'tiezhi', iconItem.icon)
-        }
+    async function insertMarkerIcon (iconItem) {
+      if (!currnentNode.value) return
+      if (!iconItem.type) {
+        const base64Str = await imageToBase64(iconItem)
+        recursiveTreeValue(root, currnentNode.value.data._id, 'imageInfo', {
+          url: base64Str,
+          width: 50,
+          height: 50
+        })
       } else {
-        if (!currnentNode.value) return
-        if (!iconItem.type) {
-          recursiveTreeValue(root, currnentNode.value.data._id, 'tiezhi', iconItem.icon)
+        const { data } = select(`#${currnentNode.value.data._id}`).datum()
+        const marks = data.marks || []
+        const idx = marks.findIndex(m => m.type === iconItem.type)
+        if (idx > -1) {
+          marks.splice(idx, 1, iconItem)
         } else {
-          const { data } = select(`#${currnentNode.value.data._id}`).datum()
-          const marks = data.marks || []
-          const idx = marks.findIndex(m => m.type === iconItem.type)
-          if (idx > -1) {
-            marks.splice(idx, 1, iconItem)
-          } else {
-            marks.unshift(iconItem)
-          }
-          recursiveTreeValue(root, currnentNode.value.data._id, 'marks', marks)
+          marks.unshift(iconItem)
         }
+        recursiveTreeValue(root, currnentNode.value.data._id, 'marks', marks)
       }
       updateXmindCanvas(false)
     }
@@ -1454,11 +1433,9 @@ export default defineComponent({
         .style('line-height', 'inherit')
         .style('padding', 0)
         .style('margin', 0)
-        .style('max-width', '300px')
         .style('line-break', 'anywhere')
         .style('word-break', 'break-all')
       cloneSvg.selectAll('.node-summary-description')
-        .style('max-width', '420px')
         .style('font-weight', 'bold')
         .style('font-size', '12px')
       svg
@@ -2069,7 +2046,6 @@ export default defineComponent({
       scaleNumber,
       historyStep,
       currentStep,
-      iconTypeName,
       textLen,
       nodeCount,
       backgroundColor,
@@ -2105,7 +2081,7 @@ export default defineComponent({
       hiddenPopover,
       contextMenuClick,
       handlerActionClick,
-      selectTiezhiIcon,
+      insertMarkerIcon,
       deleteNodeElement,
       updateXMindTheme,
       updateXMindStructure,
@@ -2310,10 +2286,8 @@ export default defineComponent({
   line-height: inherit;
   padding: 0;
   margin: 0;
-  max-width: 300px;
   line-break: anywhere;
   &.node-summary-description {
-    max-width: 420px;
     font-size: 12px;
     font-weight: bold;
   }

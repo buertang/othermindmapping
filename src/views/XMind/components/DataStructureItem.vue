@@ -14,13 +14,6 @@
           :class="{ 'is-leaf': !item.children || !item.children.length, 'is-leaf-noexpand': noExpands.includes(item._id) }"></i>
         <div class="subject-item-right">
           <img v-if="item.imageInfo" :src="item.imageInfo.url" alt="">
-          <svg
-            v-if="item.tiezhi"
-            aria-hidden="true"
-            width="42"
-            height="42">
-            <use :xlink:href="`#${item.tiezhi}`" />
-          </svg>
           <div class="text-modal">
             <div class="svg-icon-block">
               <div

@@ -162,6 +162,7 @@ export default defineComponent({
           fontWeight: textStyle.fontWeight || 'normal',
           fontStyle: textStyle.fontStyle || 'normal',
           textDecoration: textStyle.textDecoration || 'none',
+          textDirection: textStyle.textDirection || 'hor',
           textColor: textStyle.color,
           strokeColor: c.stroke,
           strokeStyle: c.strokeStyle || 'solid',
@@ -173,8 +174,7 @@ export default defineComponent({
           lineColor: lineStyle.fill,
           verticalInner: margin._t,
           horizontalInner: margin._l,
-          horizontalOutter: isEmpty(c.spacing) ? 22 : c.spacing,
-          tiezhiSize: c.tiezhiSize
+          horizontalOutter: isEmpty(c.spacing) ? 22 : c.spacing
         }
       }
       return null

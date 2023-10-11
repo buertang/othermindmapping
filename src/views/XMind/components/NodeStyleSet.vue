@@ -76,14 +76,15 @@
             </div>
           </div>
           <div class="modal">
-            <div class="c">
-              <p>贴纸尺寸</p>
-              <a-input-number
-                @change="handlerUpdateStyle($event, 'tiezhiSize')"
-                v-model:value="tiezhiSize"
-                :min="10"
-                :max="200" />
-            </div>
+            <p>文本方向</p>
+            <a-radio-group
+              @change="handlerUpdateStyle($event.target.value, 'textDirection')"
+              v-model:value="textDirection"
+              size="small"
+              button-style="solid">
+              <a-radio-button value="hor" style="font-size: 12px;">横向</a-radio-button>
+              <a-radio-button value="ver" style="font-size: 12px;">竖向</a-radio-button>
+            </a-radio-group>
           </div>
         </div>
         <div class="style-block">
@@ -274,6 +275,7 @@ export default defineComponent({
       fontStyle: 'normal', // 是否斜体
       textDecoration: 'none', // 划线
       textColor: null, // 文字颜色
+      textDirection: 'hor', // 文本方向
       strokeColor: null, // 边框颜色
       strokeStyle: null, // 边框样式
       strokeWidth: 0, // 边框宽度
@@ -284,8 +286,7 @@ export default defineComponent({
       lineWidth: null, // 连线尺寸
       verticalInner: 10, // 垂直内边距
       horizontalInner: 20, // 水平内边距
-      horizontalOutter: 22, // 水平外边距
-      tiezhiSize: 36 // 贴纸尺寸
+      horizontalOutter: 22 // 水平外边距
     })
 
     function handlerUpdateStyle (filedValue, filedName) {

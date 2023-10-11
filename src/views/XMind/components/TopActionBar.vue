@@ -92,7 +92,7 @@ export default defineComponent({
         {
           name: '标记',
           icon: 'ri-star-line',
-          action: 'insert-biaoji',
+          action: 'insert-marker',
           disabled: !props.nodeId
         },
         {
@@ -114,7 +114,6 @@ export default defineComponent({
           disabled: false,
           action: 'export',
           list: [
-            { name: '贴纸', action: 'insert-tiezhi', disabled: !props.nodeId && !props.batchNodes.length },
             { name: '图片', action: 'insert-tupian', disabled: !props.nodeId },
             { name: '标签', action: 'insert-tag', disabled: !props.nodeId },
             { name: '超链接', action: 'insert-link', disabled: !props.nodeId },

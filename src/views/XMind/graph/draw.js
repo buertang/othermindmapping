@@ -356,49 +356,6 @@ export function renderXmindPImageNodes () {
     })
 }
 
-export function renderXmindTiezhiNodes () {
-  nodeContainer
-    .selectAll('.x-mind-nodetheme')
-    .filter(n => !n.data.tiezhi)
-    .select('.xmind-node-tiezhi')
-    .remove()
-
-  const needRenderNodes = nodeContainer
-    .selectAll('.x-mind-nodetheme')
-    .filter(n => n.data.tiezhi)
-  needRenderNodes.filter(function () {
-    return !select(this)
-      .select('.xmind-node-tiezhi')
-      .empty()
-  })
-    .select('.xmind-node-tiezhi')
-    .select('svg')
-    .attr('width', d => d.style.tiezhiSize)
-    .attr('height', d => d.style.tiezhiSize)
-    .attr('x', d => d.x + (d.width - d.style.tiezhiSize) / 2)
-    .attr('y', d => d.y + d.style.margin._t)
-    .html(d => {
-      return select(`#${d.data.tiezhi}`).node().innerHTML
-    })
-
-  needRenderNodes.filter(function () {
-    return select(this)
-      .select('.xmind-node-tiezhi')
-      .empty()
-  })
-    .append('g')
-    .attr('class', 'xmind-node-tiezhi')
-    .append('svg')
-    .attr('viewBox', '0 0 1024 1024')
-    .attr('width', d => d.style.tiezhiSize)
-    .attr('height', d => d.style.tiezhiSize)
-    .attr('x', d => d.x + (d.width - d.style.tiezhiSize) / 2)
-    .attr('y', d => d.y + d.style.margin._t)
-    .html(d => {
-      return select(`#${d.data.tiezhi}`).node().innerHTML
-    })
-}
-
 export function renderXmindMarksNodes () {
   select('.mind-map-nodebox')
     .selectAll('.xmind-node-mark')
@@ -1236,7 +1193,6 @@ export function renderXmindOtherElement (summaryId, relationNodes) {
   renderExpandNodeIcon()
   renderXmindNodeTags()
   renderXmindPImageNodes()
-  renderXmindTiezhiNodes()
   renderXmindLinkNodes()
   renderXmindCommentNodes()
   renderXmindMarksNodes()

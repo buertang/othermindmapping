@@ -69,12 +69,7 @@ export default defineComponent({
               {
                 name: '标记',
                 disabled: false,
-                operate: 'insert-biaoji'
-              },
-              {
-                name: '贴纸',
-                disabled: false,
-                operate: 'insert-tiezhi'
+                operate: 'insert-marker'
               },
               {
                 name: '图片',
@@ -155,12 +150,6 @@ export default defineComponent({
             warning: true,
             children: [
               {
-                name: '贴纸',
-                disabled: !props.node.data.tiezhi,
-                operate: 'delete-tiezhi',
-                warning: true
-              },
-              {
                 name: '图片',
                 disabled: !props.node.data.imageInfo,
                 operate: 'delete-pic',
@@ -198,11 +187,6 @@ export default defineComponent({
                 disabled: !props.batchNodes.length,
                 operate: 'insert-child',
                 shortKey: 'Tab'
-              },
-              {
-                name: '贴纸',
-                disabled: !props.batchNodes.length,
-                operate: 'insert-tiezhi'
               }
             ]
           },
@@ -216,12 +200,6 @@ export default defineComponent({
                 operate: 'delete',
                 warning: true,
                 shortKey: 'Delete'
-              },
-              {
-                name: '贴纸',
-                disabled: !props.batchNodes.length,
-                operate: 'delete-tiezhi',
-                warning: true
               },
               {
                 name: '图片',

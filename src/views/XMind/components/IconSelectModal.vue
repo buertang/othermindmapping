@@ -1,19 +1,38 @@
 <template>
   <div class="tiezhi-iconselect-modal">
     <div class="modal-title">
-      <p>{{ typeName === 'tiezhi' ? '贴纸选择' : '标记选择' }} <em>双击插入标记</em></p>
+      <div class="ul-type">
+        <span
+          @click="typeName = 'mark'"
+          :class="{ active: typeName === 'mark' }">
+          <i class="ri-star-smile-line"></i>
+        </span>
+        <span
+          @click="typeName = 'tiezhi'"
+          :class="{ active: typeName === 'tiezhi' }">
+          <i class="ri-landscape-line"></i>
+        </span>
+        <em>双击插入</em>
+      </div>
       <i class="ri-close-line" @click="closeModal"></i>
     </div>
+
     <div class="content" v-if="typeName === 'tiezhi'">
-      <div class="tiezhi-block">
+      <div class="image-marker-list">
         <div
-          @dblclick="selectTiezhiIcon(item)"
-          class="tiezhi-icon-item"
-          v-for="item in tiezhiIcons"
-          :key="item.icon">
-          <svg aria-hidden="true" width="36" height="36">
-            <use :xlink:href="`#${item.icon}`" />
-          </svg>
+          class="image-marker-list-item"
+          v-for="item in imageMarkers"
+          :key="item.name">
+          <p>{{ item.name }}</p>
+          <div class="list-item_value">
+            <div
+              v-for="itemName in item.children"
+              :key="itemName.src"
+              class="image-marker"
+              @dblclick="selectTiezhiIcon(itemName.src)">
+              <img :src="itemName.src" alt="">
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -26,7 +45,7 @@
             class="mark-icon-item"
             v-for="itemName in item.icons"
             :key="itemName.icon">
-            <svg aria-hidden="true" width="28" height="28">
+            <svg aria-hidden="true" width="24" height="24">
               <use :xlink:href="`#${itemName.icon}`" />
             </svg>
           </div>
@@ -37,16 +56,12 @@
 </template>
 
 <script>
-import { defineComponent } from 'vue'
-import { tiezhiIcons, markIcons } from '../config'
+import { ref, defineComponent } from 'vue'
+import { imageMarkers, markIcons } from '../config'
 export default defineComponent({
-  props: {
-    typeName: {
-      type: String,
-      default: 'tiezhi'
-    }
-  },
   setup (_props, context) {
+    const typeName = ref('mark')
+
     function closeModal () {
       context.emit('close')
     }
@@ -56,7 +71,8 @@ export default defineComponent({
     }
 
     return {
-      tiezhiIcons,
+      typeName,
+      imageMarkers,
       markIcons,
       closeModal,
       selectTiezhiIcon
@@ -82,10 +98,30 @@ export default defineComponent({
     justify-content: space-between;
     padding: 0 12px;
     align-items: center;
-    p {
-      color: #000;
-      font-size: 14px;
-      font-weight: bold;
+    i {
+      color: #999;
+      cursor: url('~@/assets/images/pointer.png'), auto;
+      font-size: 18px;
+    }
+    .ul-type {
+      span {
+        display: inline-block;
+        padding: 0 20px;
+        line-height: 22px;
+        border-radius: 4px;
+        margin-right: 12px;
+        &.active {
+          background-color: rgb(242,242,242);
+        }
+        cursor: pointer;
+        i {
+          color: #000;
+          text-align: center;
+          font-size: 16px;
+          position: relative;
+          top: 2px;
+        }
+      }
       em {
         font-size: 12px;
         color: #999;
@@ -94,14 +130,10 @@ export default defineComponent({
         transform: scale(.8);
         position: relative;
         left: -5px;
-        top: 1px;
+        top: 4px;
         display: inline-block;
+        letter-spacing: 1px;
       }
-    }
-    i {
-      color: #999;
-      cursor: url('~@/assets/images/pointer.png'), auto;
-      font-size: 18px;
     }
   }
   .content {
@@ -111,21 +143,43 @@ export default defineComponent({
     &::-webkit-scrollbar {
       display: none;
     }
-    .tiezhi-block {
-      display: flex;
-      align-items: flex-start;
-      flex-wrap: wrap;
-      .tiezhi-icon-item {
-        margin: 12px;
-        cursor: url('~@/assets/images/pointer.png'), auto;
+    .image-marker-list {
+      &-item {
+        &:not(:last-child) {
+          margin-bottom: 20px;
+        }
+        p {
+          font-size: 13px;
+          color: #1D1F20;
+          font-weight: 600;
+          margin-bottom: 10px;
+        }
+        .list-item_value {
+          display: flex;
+          flex-wrap: wrap;
+          .image-marker {
+            width: 20%;
+            border-radius: 4px;
+            margin-top: 6px;
+            &:hover {
+              background: rgb(242,242,242);
+            }
+            img {
+              height: 42px;
+              display: block;
+              margin: 0 auto;
+              cursor: url('~@/assets/images/pointer.png'), auto;
+            }
+          }
+        }
       }
     }
     .mark-block {
       margin-bottom: 12px;
       p {
-        color: #4c4c4c;
-        font-weight: bold;
-        font-size: 12px;
+        color: #1D1F20;
+        font-weight: 600;
+        font-size: 13px;
         margin-bottom: 8px;
         user-select: none;
       }
@@ -134,7 +188,7 @@ export default defineComponent({
         align-items: flex-start;
         flex-wrap: wrap;
         .mark-icon-item {
-          margin: 2px 5px;
+          margin: 2px 4px;
           cursor: url('~@/assets/images/pointer.png'), auto;
         }
       }
