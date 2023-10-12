@@ -216,13 +216,13 @@ function setNodesStyle (nodes, themeType, direction) {
       const textColors = node.style.textColors || []
       const colorLen = colors.length
       const positionIdx = (direction === 'left' ? len + node.currentIdx : node.currentIdx) % colorLen
-      node.style.lineStyle.fill = colors[positionIdx]
+      node.style.lineStyle.fill = node.style.lineStyle.fill || colors[positionIdx]
       if (node.depth === 1) {
         node.style.fill = colors[positionIdx]
         node.style.textStyle.color = textColors[positionIdx]
       }
       if (node.depth > 1) {
-        node.style.fill = colors[positionIdx] + '18'
+        node.style.fill = node.style.fill || colors[positionIdx] + '18'
       }
     }
     const {

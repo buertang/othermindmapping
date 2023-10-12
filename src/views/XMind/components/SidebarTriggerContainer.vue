@@ -110,8 +110,11 @@ export default defineComponent({
     const themes = [
       { name: '彩虹色系', theme: 'primary', img: require('@/assets/images/xmind/primary.png') },
       { name: '简约系', theme: 'simplicity', img: require('@/assets/images/xmind/simplicity.png') },
-      { name: '浅蓝色系', theme: 'lightBlue', img: require('@/assets/images/xmind/lightBlue.png') },
-      { name: '深紫色系', theme: 'deepPurple', img: require('@/assets/images/xmind/deepPurple.png') }
+      { name: '蓝黑基础版', theme: 'blueBlackBasic', img: require('@/assets/images/xmind/blueBlackBasic.png') },
+      { name: '卡通版', theme: 'cartoon', img: require('@/assets/images/xmind/cartoon.png') },
+      { name: '深紫色系', theme: 'deepPurple', img: require('@/assets/images/xmind/deepPurple.png') },
+      { name: '黑色单色', theme: 'singleBlack', img: require('@/assets/images/xmind/singleBlack.png') },
+      { name: '浅蓝色系', theme: 'lightBlue', img: require('@/assets/images/xmind/lightBlue.png') }
     ]
 
     const structures = [
@@ -308,16 +311,19 @@ export default defineComponent({
         }
         img {
           display: block;
-          width: 100%;
-          margin: 0 auto;
+          width: 80%;
+          margin: 12px auto;
         }
-        &.structure-modal {
-         &-item {
-          img {
-            width: 80%;
+        &.theme-modal {
+          &-item {
+            width: 49%;
           }
-         }
         }
+      }
+      &.theme-modal {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
       }
     }
     .shortcut-modal {

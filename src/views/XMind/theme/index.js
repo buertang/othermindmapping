@@ -22,7 +22,6 @@ export default {
             fontWeight: 'normal'
           },
           lineStyle: {
-            fill: '#092933',
             lineWidth: 2
           },
           margin: {
@@ -55,7 +54,6 @@ export default {
             fontWeight: 'normal'
           },
           lineStyle: {
-            fill: '#f9423a',
             lineWidth: 2
           },
           margin: {
@@ -78,7 +76,6 @@ export default {
           colors: ['#F9423A', '#F6A04D', '#F3D321', '#00BC7B', '#486AFF', '#4D49BE'],
           rx: 4,
           ry: 4,
-          fill: 'rgba(0,0,0,0)',
           stroke: 'rgba(0,0,0,0)',
           strokeWidth: 0,
           textStyle: {
@@ -86,7 +83,6 @@ export default {
             fontSize: 14
           },
           lineStyle: {
-            fill: '#000',
             lineWidth: 2
           },
           margin: {
@@ -188,7 +184,7 @@ export default {
         return {
           rx: 4,
           ry: 4,
-          fill: 'rgba(0,0,0,0)',
+          fill: 'transparent',
           stroke: 'rgba(0,0,0,0)',
           strokeWidth: 0,
           textStyle: {
@@ -244,7 +240,6 @@ export default {
             fontWeight: 'normal'
           },
           lineStyle: {
-            fill: '#008B8B',
             lineWidth: 2
           },
           margin: {
@@ -277,7 +272,6 @@ export default {
             fontWeight: 'normal'
           },
           lineStyle: {
-            fill: '#f9423a',
             lineWidth: 2
           },
           margin: {
@@ -300,7 +294,6 @@ export default {
           colors: ['#00868B', '#008B8B', '#528B8B'],
           rx: 4,
           ry: 4,
-          fill: 'rgba(0,0,0,0)',
           stroke: 'rgba(0,0,0,0)',
           strokeWidth: 0,
           textStyle: {
@@ -308,7 +301,6 @@ export default {
             fontSize: 14
           },
           lineStyle: {
-            fill: '#000',
             lineWidth: 2
           },
           margin: {
@@ -335,7 +327,7 @@ export default {
 
   // 深紫色系
   deepPurple: {
-    name: 'lightBlue',
+    name: 'deepPurple',
     backgroundColor: '#fff',
     thumbColor: '#9370DB',
     relationStyle: {
@@ -356,7 +348,6 @@ export default {
             fontWeight: 'normal'
           },
           lineStyle: {
-            fill: '#9400D3',
             lineWidth: 2
           },
           margin: {
@@ -389,7 +380,6 @@ export default {
             fontWeight: 'normal'
           },
           lineStyle: {
-            fill: '#f9423a',
             lineWidth: 2
           },
           margin: {
@@ -412,7 +402,6 @@ export default {
           colors: ['#9932CC', '#8A2BE2'],
           rx: 4,
           ry: 4,
-          fill: 'rgba(0,0,0,0)',
           stroke: 'rgba(0,0,0,0)',
           strokeWidth: 0,
           textStyle: {
@@ -420,7 +409,6 @@ export default {
             fontSize: 14
           },
           lineStyle: {
-            fill: '#000',
             lineWidth: 2
           },
           margin: {
@@ -443,5 +431,335 @@ export default {
     },
     summaryLineColor: '#9370DB',
     summaryTextColor: '#9370DB'
+  },
+
+  // 黑色单色
+  singleBlack: {
+    name: 'singleBlack',
+    backgroundColor: '#fff',
+    thumbColor: '#1c1212',
+    relationStyle: {
+      lineColor: '#1c1212',
+      textColor: '#1c1212'
+    },
+    0: {
+      getStyle: function () {
+        return {
+          rx: 4,
+          ry: 4,
+          fill: '#1c1212',
+          stroke: '#1c1212',
+          strokeWidth: 0,
+          textStyle: {
+            color: '#fff',
+            fontSize: 18,
+            fontWeight: 'normal'
+          },
+          lineStyle: {
+            fill: '#1c1212',
+            lineWidth: 2
+          },
+          margin: {
+            _t: 10,
+            _r: 20,
+            _b: 10,
+            _l: 20
+          },
+          expandColor: '#fff',
+          markSize: 20,
+          linkSize: 18,
+          tagSize: 12,
+          tagColors: ['#409eff', '#67c23a', '#e6a23c', '#f56c6c'],
+          spacing: 28
+        }
+      }
+    },
+    1: {
+      getStyle: function () {
+        return {
+          colors: ['#fff'],
+          textColors: ['#1c1212'],
+          rx: 4,
+          ry: 4,
+          stroke: '#1c1212',
+          strokeWidth: 2,
+          textStyle: {
+            color: '#1c1212',
+            fontSize: 16,
+            fontWeight: 'normal'
+          },
+          lineStyle: {
+            fill: '#1c1212',
+            lineWidth: 2
+          },
+          margin: {
+            _t: 10,
+            _r: 20,
+            _b: 10,
+            _l: 20
+          },
+          expandColor: '#fff',
+          markSize: 18,
+          linkSize: 16,
+          tagSize: 10,
+          tagColors: ['#3dff03', '#03a3ff', '#e6a23c', '#034fff']
+        }
+      }
+    },
+    normal: {
+      getStyle: function () {
+        return {
+          colors: ['#1c1212'],
+          rx: 4,
+          ry: 4,
+          fill: '#fff',
+          stroke: '#1c1212',
+          strokeWidth: 2,
+          textStyle: {
+            color: '#1c1212',
+            fontSize: 14
+          },
+          lineStyle: {
+            fill: '#1c1212',
+            lineWidth: 2
+          },
+          margin: {
+            _t: 6,
+            _r: 8,
+            _b: 6,
+            _l: 8
+          },
+          expandColor: '#fff',
+          markSize: 15,
+          linkSize: 14,
+          tagSize: 10,
+          tagColors: ['#409eff', '#67c23a', '#e6a23c', '#f56c6c']
+        }
+      }
+    },
+    select: {
+      strokeWidth: 2,
+      stroke: '#2EBDFF'
+    },
+    summaryLineColor: '#1c1212',
+    summaryTextColor: '#1c1212'
+  },
+
+  // 蓝黑基础版
+  blueBlackBasic: {
+    name: 'blueBlackBasic',
+    backgroundColor: '#fff',
+    thumbColor: '#5d7ad9',
+    relationStyle: {
+      lineColor: '#000',
+      textColor: '#000'
+    },
+    0: {
+      getStyle: function () {
+        return {
+          rx: 4,
+          ry: 4,
+          fill: '#5d7ad9',
+          stroke: '#5d7ad9',
+          strokeWidth: 0,
+          textStyle: {
+            color: '#fff',
+            fontSize: 18,
+            fontWeight: 'normal'
+          },
+          lineStyle: {
+            fill: '#354359',
+            lineWidth: 2
+          },
+          margin: {
+            _t: 10,
+            _r: 20,
+            _b: 10,
+            _l: 20
+          },
+          expandColor: '#fff',
+          markSize: 20,
+          linkSize: 18,
+          tagSize: 12,
+          tagColors: ['#409eff', '#67c23a', '#e6a23c', '#f56c6c'],
+          spacing: 28
+        }
+      }
+    },
+    1: {
+      getStyle: function () {
+        return {
+          colors: ['#eff2f5'],
+          textColors: ['#000'],
+          rx: 4,
+          ry: 4,
+          stroke: '#eff2f5',
+          strokeWidth: 2,
+          textStyle: {
+            color: '#1c1212',
+            fontSize: 16,
+            fontWeight: 'normal'
+          },
+          lineStyle: {
+            fill: '#354359',
+            lineWidth: 2
+          },
+          margin: {
+            _t: 10,
+            _r: 20,
+            _b: 10,
+            _l: 20
+          },
+          expandColor: '#fff',
+          markSize: 18,
+          linkSize: 16,
+          tagSize: 10,
+          tagColors: ['#3dff03', '#03a3ff', '#e6a23c', '#034fff']
+        }
+      }
+    },
+    normal: {
+      getStyle: function () {
+        return {
+          colors: ['#fff'],
+          rx: 4,
+          ry: 4,
+          fill: '#fff',
+          stroke: '#fff',
+          strokeWidth: 0,
+          textStyle: {
+            color: '#000',
+            fontSize: 14
+          },
+          lineStyle: {
+            fill: '#354359',
+            lineWidth: 2
+          },
+          margin: {
+            _t: 6,
+            _r: 8,
+            _b: 6,
+            _l: 8
+          },
+          expandColor: '#fff',
+          markSize: 15,
+          linkSize: 14,
+          tagSize: 10,
+          tagColors: ['#409eff', '#67c23a', '#e6a23c', '#f56c6c']
+        }
+      }
+    },
+    select: {
+      strokeWidth: 2,
+      stroke: '#2EBDFF'
+    },
+    summaryLineColor: '#000',
+    summaryTextColor: '#000'
+  },
+
+  // 卡通版
+  cartoon: {
+    name: 'cartoon',
+    backgroundColor: '#fff',
+    thumbColor: '#92B4EC',
+    relationStyle: {
+      lineColor: '#B1E2FD',
+      textColor: '#B1E2FD'
+    },
+    0: {
+      getStyle: function () {
+        return {
+          rx: 4,
+          ry: 4,
+          fill: '#92B4EC',
+          stroke: '#92B4EC',
+          strokeWidth: 0,
+          textStyle: {
+            color: '#333',
+            fontSize: 20,
+            fontWeight: 'normal'
+          },
+          lineStyle: {
+            lineWidth: 2
+          },
+          margin: {
+            _t: 10,
+            _r: 20,
+            _b: 10,
+            _l: 20
+          },
+          expandColor: '#fff',
+          markSize: 20,
+          linkSize: 18,
+          tagSize: 12,
+          tagColors: ['#409eff', '#67c23a', '#e6a23c', '#f56c6c'],
+          spacing: 28
+        }
+      }
+    },
+    1: {
+      getStyle: function () {
+        return {
+          colors: ['#B1E2FD', '#FFC7C7', '#FFE69A'],
+          textColors: ['#333', '#333', '#333'],
+          rx: 4,
+          ry: 4,
+          stroke: 'rgba(0,0,0,0)',
+          strokeWidth: 0,
+          textStyle: {
+            fontSize: 16,
+            fontWeight: 'normal'
+          },
+          lineStyle: {
+            lineWidth: 2
+          },
+          margin: {
+            _t: 10,
+            _r: 20,
+            _b: 10,
+            _l: 20
+          },
+          expandColor: '#fff',
+          markSize: 18,
+          linkSize: 16,
+          tagSize: 10,
+          tagColors: ['#3dff03', '#03a3ff', '#e6a23c', '#034fff']
+        }
+      }
+    },
+    normal: {
+      getStyle: function () {
+        return {
+          colors: ['#B1E2FD', '#FFC7C7', '#FFE69A'],
+          rx: 4,
+          ry: 4,
+          stroke: 'rgba(0,0,0,0)',
+          strokeWidth: 0,
+          textStyle: {
+            fontSize: 14
+          },
+          lineStyle: {
+            lineWidth: 2
+          },
+          margin: {
+            _t: 6,
+            _r: 8,
+            _b: 6,
+            _l: 8
+          },
+          expandColor: '#fff',
+          markSize: 15,
+          linkSize: 15,
+          tagSize: 10,
+          tagColors: ['#409eff', '#67c23a', '#e6a23c', '#f56c6c']
+        }
+      }
+    },
+    select: {
+      strokeWidth: 2,
+      stroke: '#2EBDFF'
+    },
+    summaryLineColor: '#B1E2FD',
+    summaryTextColor: '#B1E2FD'
   }
 }
