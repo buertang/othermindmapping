@@ -32,7 +32,7 @@ export default {
             _l: 20
           },
           expandColor: '#fff',
-          markSize: 24,
+          markSize: 20,
           linkSize: 18,
           tagSize: 12,
           tagColors: ['#409eff', '#67c23a', '#e6a23c', '#f56c6c'],
@@ -144,7 +144,7 @@ export default {
             _l: 20
           },
           expandColor: '#fff',
-          markSize: 24,
+          markSize: 20,
           linkSize: 18,
           tagSize: 12,
           tagColors: ['#409eff', '#67c23a', '#e6a23c', '#f56c6c'].reverse(),
@@ -254,7 +254,7 @@ export default {
             _l: 20
           },
           expandColor: '#fff',
-          markSize: 24,
+          markSize: 20,
           linkSize: 18,
           tagSize: 12,
           tagColors: ['#409eff', '#67c23a', '#e6a23c', '#f56c6c'],
@@ -366,7 +366,7 @@ export default {
             _l: 20
           },
           expandColor: '#fff',
-          markSize: 24,
+          markSize: 20,
           linkSize: 18,
           tagSize: 12,
           tagColors: ['#409eff', '#67c23a', '#e6a23c', '#f56c6c'],

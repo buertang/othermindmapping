@@ -1059,7 +1059,14 @@ export const markIcons = [
       { icon: 'icon-error' },
       { icon: 'icon-music-circle' },
       { icon: 'icon-pencil-circle' },
-      { icon: 'icon-cloud-circle' }
+      { icon: 'icon-cloud-circle' },
+      { icon: 'icon-heart-circle' },
+      { icon: 'icon-tel-circle' },
+      { icon: 'icon-circle-ing' },
+      { icon: 'icon-circle_lightning_fill' },
+      { icon: 'icon-flight_circle' },
+      { icon: 'icon-star-circle1' },
+      { icon: 'icon-wenhao' }
     ]
   }
 ]
