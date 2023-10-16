@@ -18,10 +18,11 @@ export default {
           strokeWidth: 0,
           textStyle: {
             color: '#fff',
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: 'normal'
           },
           lineStyle: {
+            fill: '#092933',
             lineWidth: 2
           },
           margin: {
@@ -240,6 +241,7 @@ export default {
             fontWeight: 'normal'
           },
           lineStyle: {
+            fill: '#00868B',
             lineWidth: 2
           },
           margin: {
@@ -348,6 +350,7 @@ export default {
             fontWeight: 'normal'
           },
           lineStyle: {
+            fill: '#9400D3',
             lineWidth: 2
           },
           margin: {
@@ -568,7 +571,7 @@ export default {
             fontWeight: 'normal'
           },
           lineStyle: {
-            fill: '#354359',
+            fill: '#5d7ad9',
             lineWidth: 2
           },
           margin: {
@@ -676,10 +679,11 @@ export default {
           strokeWidth: 0,
           textStyle: {
             color: '#333',
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: 'normal'
           },
           lineStyle: {
+            fill: '#92B4EC',
             lineWidth: 2
           },
           margin: {

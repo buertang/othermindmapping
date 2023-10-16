@@ -325,40 +325,63 @@ export function recursiveTreeValue (node, id, key, value) {
 }
 
 /**
- * 递归寻找指定节点并且更新指定节点的样式
+ * 批量节点更新指定样式
  * @param {*} node
- * @param {*} id
+ * @param {*} ids
  * @param {*} key
  * @param {*} value
+ * @returns
  */
-export function updateNodeCustomStyle (node, id, key, value) {
-  if (node._id === id) {
+export function bacthUpdateNodeCustomStyle (node, ids, key, value) {
+  const idx = ids.findIndex(o => o === node._id)
+  if (idx > -1) {
     if (node.customStyle) {
       node.customStyle[key] = value
     } else {
       node.customStyle = {}
       node.customStyle[key] = value
     }
-    return
+    ids.splice(idx, 1)
+    if (!ids.length) return
   }
   if (hasChild(node)) {
     node.children.forEach(n => {
-      updateNodeCustomStyle(n, id, key, value)
+      bacthUpdateNodeCustomStyle(n, ids, key, value)
     })
   }
 }
 
 /**
- * 重置节点主题样式，清空指定样式值
+ * 重置整个画布节点样式
  * @param {*} root
  * @param {*} deep
  */
-export function resetRootNodeStyleFiled (root, deep) {
+export function resetRootNodeStyle (root) {
   root.customStyle = undefined
-  if (hasChild(root) && deep) {
+  if (hasChild(root)) {
     for (let k = 0; k < root.children.length; k++) {
-      resetRootNodeStyleFiled(root.children[k], deep)
+      resetRootNodeStyle(root.children[k])
     }
+  }
+}
+
+/**
+ * 批量节点重置样式
+ * @param {*} node
+ * @param {*} ids
+ * @returns
+ */
+export function batchResetNodeStyle (node, ids) {
+  const idx = ids.findIndex(o => o === node._id)
+  if (idx > -1) {
+    node.customStyle = undefined
+    ids.splice(idx, 1)
+    if (!ids.length) return
+  }
+  if (hasChild(node)) {
+    node.children.forEach(n => {
+      batchResetNodeStyle(n, ids)
+    })
   }
 }
 
@@ -419,7 +442,6 @@ export function storageRootRelaTime (root) {
  * @param { String } htmlStr
  */
 export function exportSVG (htmlStr) {
-  console.log(htmlStr)
   const blob = new Blob([htmlStr], {
     type: 'image/svg+xml'
   })

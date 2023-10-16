@@ -114,12 +114,11 @@
     v-show="!immersion"
     :theme="currentTheme"
     :structure="currentStructure"
-    :currentSubject="currnentNode"
+    :currentSubject="selectNodes[selectNodes.length - 1]"
     :edgeStyle="currentEdgeStyle"
     @update-theme="updateXMindTheme"
     @update-structure="updateXMindStructure"
-    @update-edge-style="updateXMindEdgeStyle"
-    @reset-subject-style="resetSubjectStyle" />
+    @update-edge-style="updateXMindEdgeStyle" />
 </template>
 
 <script>
@@ -145,7 +144,7 @@ import {
   expandAllNodes,
   toogleExpandXmindNode,
   recursiveTreeValue,
-  updateNodeCustomStyle,
+  bacthUpdateNodeCustomStyle,
   batchRecursiveTreeValue,
   storageRootRelaTime,
   createNodeIntance,
@@ -156,7 +155,8 @@ import {
   exportJSON,
   statisticTreeCount,
   getTargetDataById,
-  resetRootNodeStyleFiled,
+  resetRootNodeStyle,
+  batchResetNodeStyle,
   getNodeCustomStyle,
   imageToBase64
 } from './utils'
@@ -340,15 +340,17 @@ export default defineComponent({
           .datum()
       })
       const debounceUpdateStyle = debounce((filedName, filedValue) => {
-        updateNodeCustomStyle(root, currnentNode.value.data._id, filedName, filedValue)
+        bacthUpdateNodeCustomStyle(root, selectNodes.value.map(o => o.data._id), filedName, filedValue)
         updateXmindCanvas(false)
       }, 300)
       mitter.on('update-subject-style', function ({ filedName, filedValue }) {
         if (!debounceUpdateFileds.includes(filedName)) {
-          updateNodeCustomStyle(root, currnentNode.value.data._id, filedName, filedValue)
+          bacthUpdateNodeCustomStyle(root, selectNodes.value.map(o => o.data._id), filedName, filedValue)
           updateXmindCanvas(false)
         } else {
-          updateRedrawNodeStyle({ filedValue, filedName, id: currnentNode.value.data._id })
+          for (let i = 0; i < selectNodes.value.length; i++) {
+            updateRedrawNodeStyle({ filedValue, filedName, id: selectNodes.value[i].data._id })
+          }
           debounceUpdateStyle(filedName, filedValue)
         }
       })
@@ -519,12 +521,12 @@ export default defineComponent({
       try {
         const backupRoot = backupRootDeleteChild(root)
         const { leftRoot, rightRoot } = splitLeftRightRoot(backupRoot, currentStructure.value)
-        const packageLayoutdataLeft = dataTreeLayoutPackage(leftRoot, currentTheme.value, 'left')
+        const packageLayoutdataLeft = dataTreeLayoutPackage(leftRoot, currentTheme.value, 'left', currentStructure.value)
         const packageLayoutdataRight = dataTreeLayoutPackage(rightRoot,
           currentTheme.value,
           currentStructure.value === 'zzjgt'
             ? 'bottom'
-            : 'right')
+            : 'right', currentStructure.value)
         const leftNodes = packageLayoutdataLeft.nodes.slice(1)
         const leftLinks = packageLayoutdataLeft.links
         const rightNodes = packageLayoutdataRight.nodes
@@ -597,7 +599,9 @@ export default defineComponent({
           .classed('select-node', false)
           .select('.select-rect-border')
           .remove()
-        nodeHighLight(currnentNode.value.data._id)
+        for (let i = 0; i < selectNodes.value.length; i++) {
+          nodeHighLight(selectNodes.value[i].data._id)
+        }
       }
       if (appendHistory) {
         appendXmindHistory()
@@ -838,6 +842,15 @@ export default defineComponent({
             batchReferenceStyle(root, [currnentNode.value.data._id], copyStyle.value)
           } else if (type === 'global') {
             batchReferenceStyle(root, ids, copyStyle.value)
+          }
+          updateXmindCanvas()
+          hiddenPopover()
+          break
+        case 'reset-style':
+          if (type === 'single') {
+            batchResetNodeStyle(root, [currnentNode.value.data._id])
+          } else if (type === 'global') {
+            batchResetNodeStyle(root, ids)
           }
           updateXmindCanvas()
           hiddenPopover()
@@ -1367,6 +1380,7 @@ export default defineComponent({
     }
 
     function updateXMindTheme (theme) {
+      resetSubjectStyle(true)
       currentTheme.value = theme
       updateXmindCanvas(undefined, false)
       localStorage.setItem('theme', theme)
@@ -1394,15 +1408,12 @@ export default defineComponent({
 
     function resetSubjectStyle (isGloab) {
       if (isGloab) {
-        resetRootNodeStyleFiled(root, true)
+        resetRootNodeStyle(root)
         updateXmindCanvas()
         return
       }
-      const data = getTargetDataById(root, currnentNode.value?.data._id)
-      if (data) {
-        resetRootNodeStyleFiled(data, false)
-        updateXmindCanvas()
-      }
+      batchResetNodeStyle(root, selectNodes.value.map(o => o.data._id))
+      updateXmindCanvas()
     }
 
     /**

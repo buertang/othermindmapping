@@ -44,18 +44,16 @@ function setuniqueId (node, update) {
  * @param { String } theme 主题类型
  * @param { String } direction 子节点展开方向，默认向右
  */
-function dataTreeLayoutPackage (root, theme, direction) {
+function dataTreeLayoutPackage (root, theme, direction, structure) {
   const d3Tree = tree()
   const hierarchydata = d3Tree(hierarchy(root, d => d.children))
   nodes = hierarchydata.descendants()
   setNodesStyle(nodes, theme, direction)
   calcNodeSize(nodes)
-  firstWalk(nodes, direction, theme)
+  firstWalk(nodes, direction, theme, structure)
   secondWalk(nodes, direction, theme)
   thirdWalk(nodes, direction, theme)
-  if (theme !== 'simplicity' || direction === 'bottom') {
-    setParentNodeCenter(nodes[0], direction)
-  }
+  setParentNodeCenter(nodes[0], direction, theme !== 'simplicity' || direction === 'bottom')
   links = hierarchydata.links()
   return {
     nodes,
@@ -310,9 +308,11 @@ function setNodesStyle (nodes, themeType, direction) {
  * @param {*} nodes
  * @param { String } direction 子节点展开方向
  */
-function firstWalk (nodes, direction, themeName) {
+function firstWalk (nodes, direction, themeName, structure) {
   nodes.forEach(node => {
     node.direction = direction
+    node.gap = node.depth === 0 && structure !== 'kht'
+      ? Math.min(node.width / 2, 60) : 0
     if (node.parent && direction === 'right') {
       node.x = node.parent.x + node.parent.width + (node.parent.style.spacing || 22)
     }
@@ -489,8 +489,10 @@ function updateChildren (children, prop, offset) {
 /**
  * 父节点的位置相对于子节点居中显示
  * @param {*} node
+ * @param {*} direction
+ * @param {*} updateChild
  */
-function setParentNodeCenter (node, direction) {
+function setParentNodeCenter (node, direction, updateChild) {
   function _c (node, direction) {
     const pos = direction === 'bottom' ? 'x' : 'y'
     const sizeName = direction === 'bottom' ? 'width' : 'height'
@@ -507,8 +509,11 @@ function setParentNodeCenter (node, direction) {
         }
       }
     }
-    for (let i = 0; i < children.length; i++) {
-      _c(children[i], direction)
+    // 主题为simplicity模式下只更新root节点相对于子节点居中即可
+    if (updateChild) {
+      for (let i = 0; i < children.length; i++) {
+        _c(children[i], direction)
+      }
     }
   }
   _c(node, direction)

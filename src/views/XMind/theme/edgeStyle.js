@@ -29,6 +29,7 @@ export default {
       return `M${sx} ${sy} L${sx + 12} ${sy} Q${sx + 12} ${ty} ${tx} ${ty}`
     }
   },
+
   2: function ({ sourcePoint, targetPoint, isRoot, gradient, lineWidth }) {
     const { sx, sy } = sourcePoint
     const { tx, ty } = targetPoint
@@ -53,6 +54,7 @@ export default {
       }
     }
   },
+
   3: function ({ sourcePoint, targetPoint, isRoot, gradient, lineWidth }) {
     const { sx, sy } = sourcePoint
     const { tx, ty } = targetPoint
@@ -65,6 +67,7 @@ export default {
       return `M${sx} ${sy} L${sx + 12} ${sy} L${sx + 12} ${ty} ${tx} ${ty}`
     }
   },
+
   4: function ({ sourcePoint, targetPoint, isRoot, gradient, lineWidth }) {
     const { sx, sy } = sourcePoint
     const { tx, ty } = targetPoint
@@ -78,6 +81,7 @@ export default {
       return `M${sx} ${sy} C${sx + diff} ${sy} ${tx - diff} ${ty} ${tx} ${ty}`
     }
   },
+
   // 括号连线
   5: function ({ sourcePoint, targetPoint, isRoot, gradient, lineWidth }) {
     const { sx, sy } = sourcePoint

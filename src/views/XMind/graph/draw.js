@@ -654,7 +654,6 @@ export function renderChildCountNode () {
  */
 export function renderNewEdges (links) {
   const themeName = xmindTheme.name
-  const structure = localStorage.getItem('structure') || 'ljjgt'
   const edgeStyleValue = localStorage.getItem('edgeStyleValue') || 2
   const enter = edgeContainer
     .selectAll('g')
@@ -664,13 +663,11 @@ export function renderNewEdges (links) {
   enter
     .append('path')
     .attr('d', d => {
-      const gap = d.source.depth === 0 && structure !== 'kht'
-        ? Math.min(d.source.width / 2, 60) : 0
       const sourcePoint = {
         sx: d.target.direction === 'left'
-          ? d.source.x + gap
+          ? d.source.x + d.source.gap
           : d.target.direction === 'right'
-            ? d.source.width + d.source.x - gap
+            ? d.source.width + d.source.x - d.source.gap
             : d.source.x + d.source.width / 2,
         sy: d.target.direction === 'bottom'
           ? d.source.y + d.source.height
@@ -731,20 +728,17 @@ export function renderNewEdges (links) {
  */
 export function renderUpdateEdges (links) {
   const themeName = xmindTheme.name
-  const structure = xmindStructure
   const edgeStyleValue = localStorage.getItem('edgeStyleValue') || 2
   select('.mind-map-edgebox')
     .selectAll('g')
     .data(links)
     .select('path')
     .attr('d', d => {
-      const gap = d.source.depth === 0 && structure !== 'kht'
-        ? Math.min(d.source.width / 2, 60) : 0
       const sourcePoint = {
         sx: d.target.direction === 'left'
-          ? d.source.x + gap
+          ? d.source.x + d.source.gap
           : d.target.direction === 'right'
-            ? d.source.width + d.source.x - gap
+            ? d.source.width + d.source.x - d.source.gap
             : d.source.x + d.source.width / 2,
         sy: d.target.direction === 'bottom'
           ? d.source.y + d.source.height
@@ -1210,7 +1204,8 @@ export function updateRedrawNodeStyle ({ filedName, filedValue, id }) {
     case 'textColor':
       select(`#${id}`)
         .select('.x-mind-node-text')
-        .attr('fill', filedValue)
+        .select('.node-text-description')
+        .style('color', filedValue)
       break
     case 'strokeColor':
       select(`#${id}`)

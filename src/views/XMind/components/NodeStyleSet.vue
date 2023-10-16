@@ -1,6 +1,7 @@
 <template>
   <div class="nodestyleset-modal">
     <el-config-provider :locale="zhCn">
+      <!-- 节点样式设置 -->
       <div v-show="subjectStyle">
         <div class="style-block">
           <p class="set-title">文字</p>

@@ -5,9 +5,6 @@
     class="sidebar-trigger-container">
     <div class="sidebar-trigger-title">
       <p>{{ modalTitle }}
-        <span
-          @click="resetSubjectStyle"
-          v-show="currentId === 'style' && currentSubject">重置样式</span>
         <a-popover placement="bottomRight" overlayClassName="edgestylemodal">
           <template #content>
             <div class="style-list">
@@ -210,10 +207,6 @@ export default defineComponent({
       context.emit('update-edge-style', value)
     }
 
-    function resetSubjectStyle () {
-      context.emit('reset-subject-style')
-    }
-
     function closeModal () {
       visible.value = false
       currentId.value = null
@@ -240,8 +233,7 @@ export default defineComponent({
       updateStructure,
       closeModal,
       updateMenuModal,
-      updateEdgeStyle,
-      resetSubjectStyle
+      updateEdgeStyle
     }
   }
 })

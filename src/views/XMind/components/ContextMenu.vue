@@ -124,13 +124,19 @@ export default defineComponent({
             shortKey: 'Ctrl + X'
           },
           {
-            name: '拷贝',
+            name: '复制',
             disabled: false,
             operate: 'copy',
             shortKey: 'Ctrl + C'
           },
           {
-            name: '样式复制',
+            name: '粘贴',
+            disabled: !props.copyNode,
+            operate: 'past',
+            shortKey: 'Ctrl + V'
+          },
+          {
+            name: '复制样式',
             disabled: false,
             operate: 'copy-style'
           },
@@ -138,12 +144,6 @@ export default defineComponent({
             name: '引用样式',
             disabled: !props.copyStyle,
             operate: 'reference-style'
-          },
-          {
-            name: '粘贴',
-            disabled: !props.copyNode,
-            operate: 'past',
-            shortKey: 'Ctrl + V'
           },
           {
             name: '删除',
@@ -169,6 +169,11 @@ export default defineComponent({
                 shortKey: 'Delete'
               }
             ]
+          },
+          {
+            name: '重置样式',
+            disabled: false,
+            operate: 'reset-style'
           }
         ]
       } else {
@@ -219,6 +224,11 @@ export default defineComponent({
             name: '引用样式',
             disabled: !props.batchNodes.length || !props.copyStyle,
             operate: 'reference-style'
+          },
+          {
+            name: '重置样式',
+            disabled: !props.batchNodes.length,
+            operate: 'reset-style'
           },
           {
             name: '收起所有',
