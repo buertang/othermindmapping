@@ -654,7 +654,7 @@ export function renderChildCountNode () {
  */
 export function renderNewEdges (links) {
   const themeName = xmindTheme.name
-  const edgeStyleValue = localStorage.getItem('edgeStyleValue') || 2
+  const edgeStyleValue = localStorage.getItem('edgeStyleValue') || '2'
   const enter = edgeContainer
     .selectAll('g')
     .data(links)

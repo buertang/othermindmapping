@@ -98,7 +98,7 @@ export default defineComponent({
     const currentStructure = ref(props.structure)
     const currentEdgeStyle = ref(null)
     const triggerMenu = [
-      { name: '节点样式', id: 'style', icon: 'ri-quill-pen-line' },
+      { name: '样式', id: 'style', icon: 'ri-quill-pen-line' },
       { name: '主题', id: 'zhuti', icon: 'ri-t-shirt-line' },
       { name: '结构', id: 'jiegou', icon: 'ri-node-tree' },
       { name: '快捷键', id: 'kuaijiejian', icon: 'ri-keyboard-box-line' },
