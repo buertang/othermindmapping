@@ -230,6 +230,7 @@ function setNodesStyle (nodes, themeType, direction) {
       fontStyle,
       textDecoration,
       textDirection,
+      align,
       textColor,
       strokeColor,
       strokeStyle,
@@ -260,6 +261,9 @@ function setNodesStyle (nodes, themeType, direction) {
     }
     if (!isEmpty(textDirection)) {
       node.style.textStyle.textDirection = textDirection
+    }
+    if (!isEmpty(align)) {
+      node.style.textStyle.align = align
     }
     if (!isEmpty(textColor)) {
       node.style.textStyle.color = textColor

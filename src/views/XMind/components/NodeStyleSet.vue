@@ -87,6 +87,18 @@
               <a-radio-button value="ver" style="font-size: 12px;">竖向</a-radio-button>
             </a-radio-group>
           </div>
+          <div class="modal">
+            <p>对齐方向</p>
+            <a-radio-group
+              @change="handlerUpdateStyle($event.target.value, 'align')"
+              v-model:value="align"
+              size="small"
+              button-style="solid">
+              <a-radio-button value="left" style="font-size: 12px;"><i class="ri-align-left"></i></a-radio-button>
+              <a-radio-button value="center" style="font-size: 12px;"><i class="ri-align-center"></i></a-radio-button>
+              <a-radio-button value="right" style="font-size: 12px;"><i class="ri-align-right"></i></a-radio-button>
+            </a-radio-group>
+          </div>
         </div>
         <div class="style-block">
           <p class="set-title">边框</p>
@@ -139,7 +151,7 @@
           </div>
         </div>
         <div class="style-block">
-          <p class="set-title">背景</p>
+          <p class="set-title">填充</p>
           <div class="modal">
             <p>颜色</p>
             <el-color-picker
@@ -151,7 +163,7 @@
           </div>
         </div>
         <div class="style-block">
-          <p class="set-title">线条</p>
+          <p class="set-title">连线</p>
           <div class="modal w_50">
             <div class="c">
               <p>颜色</p>
@@ -199,7 +211,7 @@
           </div>
         </div>
         <div class="style-block">
-          <p class="set-title">节点边距</p>
+          <p class="set-title">边距</p>
           <div class="modal">
             <p>垂直内边距</p>
             <div style="width: 200px">
@@ -277,6 +289,7 @@ export default defineComponent({
       textDecoration: 'none', // 划线
       textColor: null, // 文字颜色
       textDirection: 'hor', // 文本方向
+      align: 'left', // 对齐方向
       strokeColor: null, // 边框颜色
       strokeStyle: null, // 边框样式
       strokeWidth: 0, // 边框宽度

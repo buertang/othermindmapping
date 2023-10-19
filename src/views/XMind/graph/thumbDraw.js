@@ -81,6 +81,8 @@ export function renderNewNodes (nodes, theme, structure) {
     .style('font-weight', d => d.style.textStyle.fontWeight)
     .style('font-style', d => d.style.textStyle.fontStyle)
     .style('font-family', d => d.style.textStyle.fontFamily || "黑体, SimHei, 'Heiti SC'")
+    .style('text-decoration', d => d.style.textStyle.textDecoration)
+    .style('text-align', d => d.style.textStyle.align)
 
   select('.thumb-mind-map-nodebox')
     .selectAll('.thumb-x-mind-nodetheme')
@@ -141,6 +143,8 @@ export function renderUpdateNodes (nodes) {
     .style('font-weight', d => d.style.textStyle.fontWeight)
     .style('font-style', d => d.style.textStyle.fontStyle)
     .style('font-family', d => d.style.textStyle.fontFamily || "黑体, SimHei, 'Heiti SC'")
+    .style('text-decoration', d => d.style.textStyle.textDecoration)
+    .style('text-align', d => d.style.textStyle.align)
 }
 
 /**

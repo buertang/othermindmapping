@@ -163,6 +163,7 @@ export default defineComponent({
           fontStyle: textStyle.fontStyle || 'normal',
           textDecoration: textStyle.textDecoration || 'none',
           textDirection: textStyle.textDirection || 'hor',
+          align: textStyle.align || 'left',
           textColor: textStyle.color,
           strokeColor: c.stroke,
           strokeStyle: c.strokeStyle || 'solid',

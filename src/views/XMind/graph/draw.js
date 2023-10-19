@@ -115,6 +115,7 @@ export function renderNewNodes (nodes, theme, structure) {
     .style('font-style', d => d.style.textStyle.fontStyle)
     .style('font-family', d => d.style.textStyle.fontFamily || "黑体, SimHei, 'Heiti SC'")
     .style('text-decoration', d => d.style.textStyle.textDecoration)
+    .style('text-align', d => d.style.textStyle.align)
 
   select('.mind-map-nodebox')
     .selectAll('.x-mind-nodetheme')
@@ -181,6 +182,7 @@ export function renderUpdateNodes (nodes) {
     .style('font-style', d => d.style.textStyle.fontStyle)
     .style('font-family', d => d.style.textStyle.fontFamily || "黑体, SimHei, 'Heiti SC'")
     .style('text-decoration', d => d.style.textStyle.textDecoration)
+    .style('text-align', d => d.style.textStyle.align)
 }
 
 /**
