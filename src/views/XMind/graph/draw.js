@@ -64,6 +64,9 @@ export function renderNewNodes (nodes, theme, structure) {
     .on('mouseenter', function (event) {
       mitter.emit('node-handler-mouseenter', { event, _this: this })
     })
+    .on('mousemove', function (event) {
+      mitter.emit('node-handler-mousemove', { event, _this: this })
+    })
     .on('mouseleave', function (event) {
       mitter.emit('node-handler-mouseleave', { event, _this: this })
     })
@@ -894,8 +897,8 @@ export function renderNewSummaryNode (id) {
                       .append('foreignObject')
                       .attr('x', controlPos.x + (16 + 10) * unit - (dir ? 0 : targetSummarys[i].summaryWidth - 10 - 10))
                       .attr('y', controlPos.y - targetSummarys[i].summaryHeight / 2 + 6)
-                      .attr('width', targetSummarys[i].summaryWidth)
-                      .attr('height', targetSummarys[i].summaryHeight)
+                      .attr('width', targetSummarys[i].summaryWidth - 20)
+                      .attr('height', targetSummarys[i].summaryHeight - 12)
                       .append('xhtml:p')
                       .attr('xmlns', 'http://www.w3.org/1999/xhtml')
                       .attr('class', 'node-summary-description')
@@ -1295,7 +1298,7 @@ export function createCustomXMindDEFS () {
 export function drawImageControlNode (mindOutterG) {
   const controllers = ['top-left', 'top-right', 'bottom-right', 'bottom-left']
   mindOutterG
-    .append('g')
+    .insert('g', '.mind-map-edgebox')
     .style('display', 'none')
     .attr('class', 'element-drag-controller')
     .on('click', event => event.stopPropagation())
@@ -1314,6 +1317,23 @@ export function drawImageControlNode (mindOutterG) {
     .insert('path', 'rect')
     .attr('stroke', 'rgb(41,183,250)')
     .attr('stroke-width', 2)
+    .attr('fill', 'transparent')
+    // 节点拖动占位符绘制
+  mindOutterG.append('g')
+    .attr('class', 'drag-shadow-node')
+    .style('display', 'none')
+    .append('rect')
+    .attr('fill', 'rgb(4,183,250)')
+    .attr('rx', 4)
+    .attr('ry', 4)
+    .attr('width', 46)
+    .attr('height', 18)
+  mindOutterG.insert('g', '.mind-map-nodebox')
+    .attr('class', 'drag-shadow-edge')
+    .style('display', 'none')
+    .append('path')
+    .attr('stroke-width', 2)
+    .attr('stroke', 'rgb(4, 183, 250)')
     .attr('fill', 'transparent')
 }
 

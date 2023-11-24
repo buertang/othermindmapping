@@ -166,3 +166,34 @@ export function isRectangleInside (sourceRect, targetRect) {
   }
   return false
 }
+
+/**
+ * 节点拖动占位符连线获取起始坐标和结束坐标
+ * @param {*} params
+ */
+export function getEdgeStartEndCoordinate (params) {
+  let startX, endX
+  const { direction, enterNodeInfo, dir, parentNodeInfo, atLast } = params
+  const { x, y, width, height } = enterNodeInfo
+  const isRoot = !parentNodeInfo.parent
+  const endY = atLast ? y + height / 2 : dir === 'down' ? y + height + 12 : y - 12
+  const startY = atLast ? y + height / 2 : parentNodeInfo.y + parentNodeInfo.height / 2
+  if (direction === 'right') {
+    endX = atLast ? x + width + 20 : x
+    startX = atLast ? x + width : parentNodeInfo.x + parentNodeInfo.width / (isRoot ? 2 : 1)
+    return {
+      start: { x: startX, y: startY },
+      end: { x: endX, y: endY },
+      rect: { x: endX, y: endY - 9 }
+    }
+  }
+  if (direction === 'left') {
+    endX = atLast ? x - 20 : x + width
+    startX = atLast ? x : parentNodeInfo.x + parentNodeInfo.width * (isRoot ? 0.5 : 0)
+    return {
+      start: { x: startX, y: startY },
+      end: { x: endX, y: endY },
+      rect: { x: endX - 46, y: endY - 9 }
+    }
+  }
+}

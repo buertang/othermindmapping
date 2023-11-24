@@ -130,7 +130,8 @@ import { select, selectAll } from 'd3-selection'
 import { zoom as d3Zoom, zoomIdentity } from 'd3-zoom'
 import { preventWindowDefault, shortcutKeydown } from './shortcutKey'
 import { ref, defineComponent, onMounted, nextTick, computed, onBeforeUnmount, watch } from 'vue'
-import { getLinearExpression, getMinDistancePoint, getRectLineIntersectionPoint, collideRect, isRectangleInside } from './utils/math'
+import edgeStyleMap from './theme/edgeStyle'
+import { getLinearExpression, getMinDistancePoint, getRectLineIntersectionPoint, getEdgeStartEndCoordinate, collideRect, isRectangleInside } from './utils/math'
 import { randomId, dataTreeLayoutPackage, getNodeRelationPathPoints, setuniqueId } from './utils/node'
 import {
   debounce,
@@ -204,6 +205,7 @@ let hasMoveEvent = false
 let dragEnterNodeId = null
 let summaryArea = null
 let summaryBrothers = []
+let dragTargetAttrs = null
 const debounceUpdateFileds = ['textColor', 'strokeColor', 'backgroundColor', 'lineColor']
 export default defineComponent({
   components: {
@@ -391,10 +393,10 @@ export default defineComponent({
         .append('g')
         .attr('class', 'map-outter-container')
       createCustomXMindDEFS()
-      drawImageControlNode(mindContainer)
       initRnderCanvas()
       const localTransform = localStorage.getItem('transform')
       setXMindMapCenter(localTransform ? JSON.parse(localTransform) : undefined)
+      drawImageControlNode(mindContainer)
     }
 
     /**
@@ -657,6 +659,9 @@ export default defineComponent({
       select(_this).datum().tx = tx + event.dx
       select(_this).datum().ty = ty + event.dy
       select(_this).attr('transform', `translate(${tx + event.dx}, ${ty + event.dy})`)
+      if (dragTargetAttrs) {
+        renderDragShadowNode(event.sourceEvent)
+      }
     }
 
     function nodeHandlerDragEnd (_event, _this) {
@@ -665,7 +670,8 @@ export default defineComponent({
         const data = copyOrCutXmindNode(root.children, root, dragIngSubject.value.data._id, true)
         insertXmindNode([root], dragEnterNodeId, 'child', data)
       }
-      select('.nodedragenter-shadow').style('opacity', 0)
+      select('.drag-shadow-node').style('display', 'none')
+      select('.drag-shadow-edge').style('display', 'none')
       select(_this).remove()
       dragEnterNodeId = null
       dragIngSubject.value = null
@@ -1044,22 +1050,26 @@ export default defineComponent({
         .attr('opacity', 1)
       if (dragIngSubject.value) {
         const data = select(_this).datum()
+        if (!data.parent) return
+        const insertNodeId = data.parent.data._id
+        const direction = data.direction
         dragEnterNodeId = data.data._id
-        const strokeWidth = data.style.strokeWidth / 2
-        const isExist = !select('.nodedragenter-shadow').empty()
-        const ele = isExist
-          ? mindContainer.select('.nodedragenter-shadow')
-          : mindContainer.append('rect').attr('class', 'nodedragenter-shadow')
-        ele.attr('rx', 4)
-          .attr('ry', 4)
-          .attr('x', data.x - 6 - strokeWidth)
-          .attr('y', data.y - 6 - strokeWidth)
-          .attr('width', data.width + (6 + strokeWidth) * 2)
-          .attr('height', data.height + (6 + strokeWidth) * 2)
-          .attr('stroke', '#2080f780')
-          .attr('stroke-width', 2)
-          .attr('fill', '#2080f740')
-          .style('opacity', 1)
+        const boundingClientRect = select(_this).node().getBoundingClientRect()
+        const enterNodeInfo = {
+          x: data.x,
+          y: data.y,
+          width: data.width,
+          height: data.height,
+          top: boundingClientRect.top,
+          left: boundingClientRect.left,
+          hasChild: !!data.children?.length
+        }
+        dragTargetAttrs = {
+          insertNodeId,
+          direction,
+          enterNodeInfo,
+          parentNodeInfo: data.parent
+        }
       }
     }
 
@@ -1072,9 +1082,36 @@ export default defineComponent({
         .transition().duration(300)
         .attr('opacity', 0)
       if (dragIngSubject.value) {
+        dragTargetAttrs = null
         dragEnterNodeId = null
-        select('.nodedragenter-shadow').style('opacity', 0)
+        select('.drag-shadow-node').style('display', 'none')
+        select('.drag-shadow-edge').style('display', 'none')
       }
+    }
+
+    /**
+     * 渲染拖动节点后节点即将存在位置的占位符
+     * @param {*} _event
+     */
+    function renderDragShadowNode (_event) {
+      const dragShadowNode = select('.drag-shadow-node').style('display', 'block')
+      const dragShadowEdge = select('.drag-shadow-edge').style('display', 'block')
+      const { parentNodeInfo, enterNodeInfo, direction } = dragTargetAttrs
+      const { width, height, top, left, hasChild } = enterNodeInfo
+      const dir = top + height / 2 > _event.y ? 'up' : 'down'
+      const atLast = (direction === 'right' ? width * eventTransform.k + left - _event.x < 20 : _event.x - left < 20) && !hasChild
+      const { start, end, rect } = getEdgeStartEndCoordinate({ direction, parentNodeInfo, enterNodeInfo, dir, atLast })
+      dragShadowNode.select('rect')
+        .attr('x', rect.x)
+        .attr('y', rect.y)
+      dragShadowEdge.select('path')
+        .attr('d', edgeStyleMap[currentEdgeStyle.value]({
+          sourcePoint: { sx: start.x, sy: start.y },
+          targetPoint: { tx: end.x, ty: end.y },
+          isRoot: !parentNodeInfo.parent,
+          gradient: false,
+          lineWidth: 1
+        }))
     }
 
     function summaryHandlerMouseEnter (parentId, _event, _this) {
@@ -1521,151 +1558,151 @@ export default defineComponent({
       if (imageContolName.value) {
         imageControlPointMove(event)
       }
+    }
 
-      /**
+    /**
      * 概要连线上的控制点拖动修改概要范围
      * @param {*} event
      */
-      function summaryControlMove (event) {
-        const y = event.movementY / eventTransform.k
-        const pageY = event.pageY
-        const targetEle = select('.mind-map-summarybox .select-target-summary')
-        const height = Number(targetEle.attr('height'))
-        const oldY = Number(targetEle.attr('y'))
-        const controlEle = select(`.${summaryControlName.value.split(' ')[1]}`)
-        const controlEleY = controlEle.node().getBoundingClientRect().y
-        const controlY = Number(controlEle.attr('y'))
-        // 鼠标y坐标不在区域y坐标区间内不执行拖动
-        if ((y < 0 && pageY > controlEleY) || (y > 0 && pageY < controlEleY)) {
+    function summaryControlMove (event) {
+      const y = event.movementY / eventTransform.k
+      const pageY = event.pageY
+      const targetEle = select('.mind-map-summarybox .select-target-summary')
+      const height = Number(targetEle.attr('height'))
+      const oldY = Number(targetEle.attr('y'))
+      const controlEle = select(`.${summaryControlName.value.split(' ')[1]}`)
+      const controlEleY = controlEle.node().getBoundingClientRect().y
+      const controlY = Number(controlEle.attr('y'))
+      // 鼠标y坐标不在区域y坐标区间内不执行拖动
+      if ((y < 0 && pageY > controlEleY) || (y > 0 && pageY < controlEleY)) {
+        return
+      }
+      const idx = pageY > controlEleY ? 1 : 0
+      if (summaryControlName.value.includes('down')) {
+        if ((height + y + oldY <= summaryArea.downArea[0]) || ((height + y + oldY >= summaryArea.downArea[1]))) {
+          targetEle.attr('height', summaryArea.downArea[idx] - oldY)
+          controlEle.attr('y', summaryArea.downArea[idx] - 4)
           return
         }
-        const idx = pageY > controlEleY ? 1 : 0
-        if (summaryControlName.value.includes('down')) {
-          if ((height + y + oldY <= summaryArea.downArea[0]) || ((height + y + oldY >= summaryArea.downArea[1]))) {
-            targetEle.attr('height', summaryArea.downArea[idx] - oldY)
-            controlEle.attr('y', summaryArea.downArea[idx] - 4)
-            return
-          }
-          targetEle.attr('height', height + y)
-          controlEle.attr('y', controlY + y)
-        } else if (summaryControlName.value.includes('up')) {
-          if ((oldY + y <= summaryArea.upArea[0]) || (oldY + y >= summaryArea.upArea[1])) {
-            targetEle.attr('y', summaryArea.upArea[idx])
-            targetEle.attr('height', height - summaryArea.upArea[idx] + oldY)
-            controlEle.attr('y', controlY + summaryArea.upArea[idx] - oldY)
-            return
-          }
-          targetEle.attr('y', oldY + y)
-          targetEle.attr('height', height - y)
-          controlEle.attr('y', controlY + y)
+        targetEle.attr('height', height + y)
+        controlEle.attr('y', controlY + y)
+      } else if (summaryControlName.value.includes('up')) {
+        if ((oldY + y <= summaryArea.upArea[0]) || (oldY + y >= summaryArea.upArea[1])) {
+          targetEle.attr('y', summaryArea.upArea[idx])
+          targetEle.attr('height', height - summaryArea.upArea[idx] + oldY)
+          controlEle.attr('y', controlY + summaryArea.upArea[idx] - oldY)
+          return
         }
-        svg.classed('n-resize', true)
+        targetEle.attr('y', oldY + y)
+        targetEle.attr('height', height - y)
+        controlEle.attr('y', controlY + y)
       }
+      svg.classed('n-resize', true)
+    }
 
-      /**
+    /**
      * 节点关系连线上的控制点拖动
      * @param {*} event
      */
-      function relationPathControlMove (event) {
-        const k = eventTransform.k
-        const { movementX: x, movementY: y } = event
-        const touchName = controlName.value.split('-')[0]
-        const keyName = touchName === 'start' ? 'source' : 'target'
-        relationNodeSubject.value[keyName].controllerDiff.x += x / k
-        relationNodeSubject.value[keyName].controllerDiff.y += y / k
-        const { relationId, source, target } = relationNodeSubject.value
-        try {
-          const { start, end, c1, c2 } = getNodeRelationPathPoints(source, target)
-          updateRelationElementPos(relationId, touchName, keyName, c1, c2, start, end)
-        } catch (error) {
-          console.warn('The node of the relational connection could not be found')
-        }
+    function relationPathControlMove (event) {
+      const k = eventTransform.k
+      const { movementX: x, movementY: y } = event
+      const touchName = controlName.value.split('-')[0]
+      const keyName = touchName === 'start' ? 'source' : 'target'
+      relationNodeSubject.value[keyName].controllerDiff.x += x / k
+      relationNodeSubject.value[keyName].controllerDiff.y += y / k
+      const { relationId, source, target } = relationNodeSubject.value
+      try {
+        const { start, end, c1, c2 } = getNodeRelationPathPoints(source, target)
+        updateRelationElementPos(relationId, touchName, keyName, c1, c2, start, end)
+      } catch (error) {
+        console.warn('The node of the relational connection could not be found')
       }
+    }
 
-      function relationPathPointMove (event) {
-        const { x, y } = event
-        const { x: tx, y: ty, k } = eventTransform
-        const touchName = controlName.value.split('-')[0]
-        const keyName = touchName === 'start' ? 'source' : 'target'
-        const movePoint = { x: (x - tx) / k, y: (y - ty) / k }
-        const { relationId, source, target } = relationNodeSubject.value
-        const targetNodeData = select(`#${keyName === 'source' ? source.id : target.id}`).datum()
-        const centerPoint = { x: targetNodeData.x + targetNodeData.width / 2, y: targetNodeData.y + targetNodeData.height / 2 }
-        const expression = getLinearExpression(movePoint, centerPoint)
-        const intersectPoints = getRectLineIntersectionPoint({
-          y1: targetNodeData.y - 4,
-          x1: targetNodeData.x + targetNodeData.width + 4,
-          y2: targetNodeData.y + targetNodeData.height + 4,
-          x2: targetNodeData.x - 4
-        }, expression)
-        const targetMinPoint = getMinDistancePoint({ x: movePoint.x, y: movePoint.y }, intersectPoints)
-        relationNodeSubject.value[keyName].pointDiff.x = targetMinPoint.x - targetNodeData.x
-        relationNodeSubject.value[keyName].pointDiff.y = targetMinPoint.y - targetNodeData.y
-        try {
-          const { start, end, c1, c2 } = getNodeRelationPathPoints(source, target)
-          select(`#relation-${relationId}`)
-            .select('.controller-model')
-            .select(`.${touchName}-circle`)
-            .datum(keyName === 'source' ? start : end)
-            .attr('cx', d => d.x)
-            .attr('cy', d => d.y)
-          updateRelationElementPos(relationId, touchName, keyName, c1, c2, start, end)
-        } catch (error) {
-          console.warn('The node of the relational connection could not be found')
-        }
+    function relationPathPointMove (event) {
+      const { x, y } = event
+      const { x: tx, y: ty, k } = eventTransform
+      const touchName = controlName.value.split('-')[0]
+      const keyName = touchName === 'start' ? 'source' : 'target'
+      const movePoint = { x: (x - tx) / k, y: (y - ty) / k }
+      const { relationId, source, target } = relationNodeSubject.value
+      const targetNodeData = select(`#${keyName === 'source' ? source.id : target.id}`).datum()
+      const centerPoint = { x: targetNodeData.x + targetNodeData.width / 2, y: targetNodeData.y + targetNodeData.height / 2 }
+      const expression = getLinearExpression(movePoint, centerPoint)
+      const intersectPoints = getRectLineIntersectionPoint({
+        y1: targetNodeData.y - 4,
+        x1: targetNodeData.x + targetNodeData.width + 4,
+        y2: targetNodeData.y + targetNodeData.height + 4,
+        x2: targetNodeData.x - 4
+      }, expression)
+      const targetMinPoint = getMinDistancePoint({ x: movePoint.x, y: movePoint.y }, intersectPoints)
+      relationNodeSubject.value[keyName].pointDiff.x = targetMinPoint.x - targetNodeData.x
+      relationNodeSubject.value[keyName].pointDiff.y = targetMinPoint.y - targetNodeData.y
+      try {
+        const { start, end, c1, c2 } = getNodeRelationPathPoints(source, target)
+        select(`#relation-${relationId}`)
+          .select('.controller-model')
+          .select(`.${touchName}-circle`)
+          .datum(keyName === 'source' ? start : end)
+          .attr('cx', d => d.x)
+          .attr('cy', d => d.y)
+        updateRelationElementPos(relationId, touchName, keyName, c1, c2, start, end)
+      } catch (error) {
+        console.warn('The node of the relational connection could not be found')
       }
+    }
 
-      function imageControlPointMove (event) {
-        const controlNode = select('.element-drag-controller')
-        const imageNode = controlNode.select('image')
-        const x = Number(imageNode.attr('x'))
-        const y = Number(imageNode.attr('y'))
-        const width = Number(imageNode.attr('width'))
-        const height = Number(imageNode.attr('height'))
-        const ratio = width / height
-        let [startX, startY, currentWidth] = [0, 0, 0]
-        const pointClientRect = controlNode.select(`.${imageContolName.value}`).node().getBoundingClientRect()
-        if (event.x > pointClientRect.x && event.movementX <= 0) return
-        if (event.x < pointClientRect.x && event.movementX >= 0) return
-        if (imageContolName.value.includes('top-left')) {
-          // 左上角控制点拖动
-          startX = x + event.movementX
-          startY = y + event.movementX / ratio
-          currentWidth = width - event.movementX
-        } else if (imageContolName.value.includes('top-right')) {
-          // 右上角控制点拖动
-          startX = x
-          startY = y - event.movementX / ratio
-          currentWidth = width + event.movementX
-        } else if (imageContolName.value.includes('bottom-right')) {
-          // 右下角控制点拖动
-          startX = x
-          startY = y
-          currentWidth = width + event.movementX
-        } else {
-          // 左下角控制点拖动
-          startX = x + event.movementX
-          startY = y
-          currentWidth = width - event.movementX
-        }
-        const currentHeight = currentWidth / ratio
-        if (currentWidth <= 20 || currentHeight <= 20 || currentWidth >= 800) {
-          return
-        }
-        controlNode
-          .select('path')
-          .attr('d', `M${startX} ${startY} H${startX + currentWidth} V${startY + currentHeight} H${startX} V${startY}`)
-        controlNode
-          .select('image')
-          .attr('x', startX)
-          .attr('y', startY)
-          .attr('width', currentWidth)
-          .attr('height', currentHeight)
-        controlNode.select('.top-left-point').attr('x', startX - 4).attr('y', startY - 4)
-        controlNode.select('.top-right-point').attr('x', startX + currentWidth - 4).attr('y', startY - 4)
-        controlNode.select('.bottom-right-point').attr('x', startX + currentWidth - 4).attr('y', startY + currentHeight - 4)
-        controlNode.select('.bottom-left-point').attr('x', startX - 4).attr('y', startY + currentHeight - 4)
+    function imageControlPointMove (event) {
+      const controlNode = select('.element-drag-controller')
+      const imageNode = controlNode.select('image')
+      const x = Number(imageNode.attr('x'))
+      const y = Number(imageNode.attr('y'))
+      const width = Number(imageNode.attr('width'))
+      const height = Number(imageNode.attr('height'))
+      const ratio = width / height
+      let [startX, startY, currentWidth] = [0, 0, 0]
+      const pointClientRect = controlNode.select(`.${imageContolName.value}`).node().getBoundingClientRect()
+      if (event.x > pointClientRect.x && event.movementX <= 0) return
+      if (event.x < pointClientRect.x && event.movementX >= 0) return
+      if (imageContolName.value.includes('top-left')) {
+        // 左上角控制点拖动
+        startX = x + event.movementX
+        startY = y + event.movementX / ratio
+        currentWidth = width - event.movementX
+      } else if (imageContolName.value.includes('top-right')) {
+        // 右上角控制点拖动
+        startX = x
+        startY = y - event.movementX / ratio
+        currentWidth = width + event.movementX
+      } else if (imageContolName.value.includes('bottom-right')) {
+        // 右下角控制点拖动
+        startX = x
+        startY = y
+        currentWidth = width + event.movementX
+      } else {
+        // 左下角控制点拖动
+        startX = x + event.movementX
+        startY = y
+        currentWidth = width - event.movementX
       }
+      const currentHeight = currentWidth / ratio
+      if (currentWidth <= 20 || currentHeight <= 20 || currentWidth >= 800) {
+        return
+      }
+      controlNode
+        .select('path')
+        .attr('d', `M${startX} ${startY} H${startX + currentWidth} V${startY + currentHeight} H${startX} V${startY}`)
+      controlNode
+        .select('image')
+        .attr('x', startX)
+        .attr('y', startY)
+        .attr('width', currentWidth)
+        .attr('height', currentHeight)
+      controlNode.select('.top-left-point').attr('x', startX - 4).attr('y', startY - 4)
+      controlNode.select('.top-right-point').attr('x', startX + currentWidth - 4).attr('y', startY - 4)
+      controlNode.select('.bottom-right-point').attr('x', startX + currentWidth - 4).attr('y', startY + currentHeight - 4)
+      controlNode.select('.bottom-left-point').attr('x', startX - 4).attr('y', startY + currentHeight - 4)
     }
 
     function updateRelationElementPos (relationId, touchName, keyName, c1, c2, start, end) {
@@ -2287,7 +2324,7 @@ export default defineComponent({
   animation: relation-path-move 10s infinite linear;
 }
 
-.nodedragenter-shadow {
+.nodedragenter-shadow, .drag-shadow-node {
   pointer-events: none;
 }
 
